@@ -238,12 +238,12 @@ button:disabled { cursor: not-allowed; opacity: 0.42; }
 .pending-group-chip input:checked + span { border-color: var(--group-border, rgba(252, 133, 0, 0.5)); background: var(--group-strong, rgba(252, 133, 0, 0.18)); color: #fff; box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.035); }
 .pending-group-chip input:focus-visible + span { outline: 2px solid #fff; outline-offset: 2px; }
 .pending-anchor { color: var(--muted); font-size: 0.62rem; font-weight: 800; text-align: right; }
-.group-color-0 { --group-border: rgba(64, 217, 164, 0.48); --group-bg: rgba(64, 217, 164, 0.075); --group-strong: rgba(64, 217, 164, 0.2); }
-.group-color-1 { --group-border: rgba(121, 174, 252, 0.5); --group-bg: rgba(121, 174, 252, 0.075); --group-strong: rgba(121, 174, 252, 0.2); }
-.group-color-2 { --group-border: rgba(245, 190, 99, 0.52); --group-bg: rgba(245, 190, 99, 0.075); --group-strong: rgba(245, 190, 99, 0.2); }
-.group-color-3 { --group-border: rgba(204, 135, 255, 0.5); --group-bg: rgba(204, 135, 255, 0.075); --group-strong: rgba(204, 135, 255, 0.2); }
-.group-color-4 { --group-border: rgba(255, 132, 173, 0.5); --group-bg: rgba(255, 132, 173, 0.075); --group-strong: rgba(255, 132, 173, 0.2); }
-.group-color-5 { --group-border: rgba(101, 210, 221, 0.5); --group-bg: rgba(101, 210, 221, 0.075); --group-strong: rgba(101, 210, 221, 0.2); }
+.group-color-0 { --group-border: rgba(228, 158, 82, 0.72); --group-bg: rgba(228, 158, 82, 0.11); --group-strong: rgba(228, 158, 82, 0.27); }
+.group-color-1 { --group-border: rgba(231, 201, 96, 0.72); --group-bg: rgba(231, 201, 96, 0.11); --group-strong: rgba(231, 201, 96, 0.27); }
+.group-color-2 { --group-border: rgba(137, 163, 219, 0.72); --group-bg: rgba(137, 163, 219, 0.11); --group-strong: rgba(137, 163, 219, 0.27); }
+.group-color-3 { --group-border: rgba(181, 151, 214, 0.72); --group-bg: rgba(181, 151, 214, 0.11); --group-strong: rgba(181, 151, 214, 0.27); }
+.group-color-4 { --group-border: rgba(211, 194, 166, 0.72); --group-bg: rgba(211, 194, 166, 0.11); --group-strong: rgba(211, 194, 166, 0.27); }
+.group-color-5 { --group-border: rgba(171, 185, 113, 0.72); --group-bg: rgba(171, 185, 113, 0.11); --group-strong: rgba(171, 185, 113, 0.27); }
 .section-heading { display: flex; align-items: end; justify-content: space-between; margin-bottom: 8px; }
 .section-heading h2 { font-size: 1.15rem; }
 .text-button { padding: 7px 0; background: none; color: var(--green); font-size: 0.82rem; font-weight: 800; }
