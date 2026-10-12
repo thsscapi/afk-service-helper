@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#0e8f6e" />
+    <meta name="description" content="Live Resurrection and Time Leap cycle guidance for AFK boss services" />
+    <title>Sparrow's AFK Service Helper</title>
+    <link rel="icon" type="image/png" href="/assets/resurrection.png" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div class="ambient ambient-one"></div>
+    <div class="ambient ambient-two"></div>
+
+    <header class="app-header shell">
+      <div class="header-top">
+        <div class="header-brand">
+          <h1>Sparrow's AFK Service <span>Helper</span></h1>
+        </div>
+        <div class="header-actions">
+          <span id="save-indicator" class="save-indicator">Saved</span>
+          <button id="start-button" class="primary-button header-start-button step-badged" data-step-badge="2" type="button">Start run</button>
+          <button id="override-button" class="secondary-button step-badged" data-step-badge="10" type="button" title="Correct a missed or unrecorded Res, TL, or revival without rewinding timers.">Override</button>
+          <button id="reset-button" class="secondary-button header-reset-button" type="button" title="Clear all live timers and cooldowns while keeping party setup.">Reset</button>
+          <button id="settings-button" class="icon-button setup-button step-badged" data-step-badge="1" type="button" aria-label="Open party setup" title="Open party setup"><span aria-hidden="true">⚙</span><span>Party Setup</span></button>
+        </div>
+      </div>
+      <p class="app-description">A fan-made tool for managing AFK buyer services across boss runs. Track Resurrection, Time Leap, runner incidents, and revive deadlines while Next Action guides the cycle.</p>
+      <details class="app-instructions">
+        <summary><span class="instructions-summary-icon" aria-hidden="true">ⓘ</span><span>See instructions</span></summary>
+        <ol class="instructions-list">
+          <li><strong>Setup Party:</strong> Click <button class="instruction-link" type="button" data-flash-target="#settings-button">Party Setup</button>. Add every available Res and TL, assign parties, and mark the Sed Bishop. Extra Res is kept as backup; any ready TL may be used.</li>
+          <li><strong>Start Run:</strong> Click <button class="instruction-link" type="button" data-flash-target="#start-button">Start Run</button> when the service begins. This records the start without beginning a death timer.</li>
+          <li><strong>Buyer Death:</strong> Whenever the buyer dies, click <button class="instruction-link" type="button" data-flash-target="#buyer-died-button">Buyer died</button> to begin the 9-minute revive window.</li>
+          <li><strong>Follow the <button class="instruction-link" type="button" data-flash-target="#next-card">Next Action</button></strong> accordingly.</li>
+          <li><strong>Revive:</strong> Pending deaths and the matching Res buttons share a colour. After the cast, click the exact <button class="instruction-link" type="button" data-flash-target="#pending-deaths, #res-cards">Res target</button>; everyone named on it is revived in one action.</li>
+          <li><strong>Time Leap:</strong> When any Bucc uses TL, click <button class="instruction-link" type="button" data-flash-target=".cast-tl-button">Used TL</button>. It resets every living, connected Res user. Main and extra TL are interchangeable.</li>
+          <li><strong>Deaths/DC:</strong> Record every death—even when several people are down. Use <button class="instruction-link" type="button" data-flash-target="#pending-deaths">Pending deaths</button> to review exact revive groups. A dead Bishop or Bucc is a runner and becomes an exact Res target automatically.</li>
+          <li><strong>Body Part Dies (optional):</strong> When a HT <button class="instruction-link" type="button" data-flash-target=".body-part-button">body part</button> dies, click it to record the event.</li>
+          <li><strong>Export Log:</strong> Click <button class="instruction-link" type="button" data-flash-target="#export-button">Export</button> to save the event log for runner deaths, disconnects, and splits.</li>
+          <li><strong>Correct missed actions:</strong> Click <button class="instruction-link" type="button" data-flash-target="#override-button">Override</button> for an unrecorded Res or TL, a wrong party setup, or to mark someone revived without consuming a tracked skill. Other timers keep running.</li>
+          <li><strong>Undo a mistake:</strong> Click <button class="instruction-link" type="button" data-flash-target="#undo-button">Undo</button>, or press Ctrl+Z, to reverse the latest recorded action. Active timers keep counting from their original timestamps.</li>
+        </ol>
+      </details>
+    </header>
+
+    <main class="shell layout">
+      <section id="next-card" class="next-card tone-idle" aria-live="polite">
+        <div class="next-topline">
+          <span class="live-dot"></span>
+          <span class="step-badge" aria-hidden="true">4</span>
+          <span>Next action</span>
+          <span id="service-outlook" class="outlook">Not started</span>
+        </div>
+        <h2 id="next-title">START THE RUN</h2>
+        <p id="next-detail">Click Start Run when the service begins. Record Buyer died separately when it happens.</p>
+        <ol id="next-steps" class="next-steps"></ol>
+      </section>
+
+      <section class="status-grid" aria-label="Live timers">
+        <article class="status-card buyer-card">
+          <div class="card-heading">
+            <span class="role-icon buyer-icon" aria-hidden="true"><img src="https://legends.ml/static/images/lib/item/04031138.png" alt="" /></span>
+            <div><p>Buyer</p><h3 id="buyer-name">Buyer</h3></div>
+          </div>
+          <div class="timer-block" title="Time remaining in the buyer's nine-minute death window.">
+            <strong id="buyer-timer" class="timer death-timer">09:00</strong>
+          </div>
+          <span id="buyer-state" class="pill neutral">Waiting</span>
+          <div class="status-controls buyer-controls">
+            <div class="status-primary-row">
+              <span class="step-badge" aria-hidden="true">3</span>
+              <button id="buyer-died-button" class="status-action-button death-action" type="button" title="Record the buyer's death and start the nine-minute timer.">Buyer died</button>
+            </div>
+            <div class="status-connection-row">
+              <button id="buyer-disconnected-button" class="status-action-button dc-action" type="button" title="Record that the buyer disconnected and the service cannot continue.">DC</button>
+            </div>
+          </div>
+        </article>
+
+        <article class="status-card runner-card">
+          <div class="card-heading">
+            <span class="role-icon sword-icon" aria-hidden="true">⚔️</span>
+            <div><p>Runner</p><h3 id="runner-name">None dead</h3></div>
+          </div>
+          <div class="timer-block" title="Time remaining in the runner's nine-minute death window.">
+            <strong id="runner-timer" class="timer death-timer muted">—</strong>
+          </div>
+          <span id="runner-state" class="pill good">Alive</span>
+          <div class="status-controls runner-controls">
+            <div class="status-primary-row">
+              <span class="step-badge" aria-hidden="true">7</span>
+              <span class="status-control-label">Runner died:</span>
+              <button id="runner-together-button" class="status-action-button near-action" type="button" title="Runner died near the buyer and can share one Resurrection.">Near buyer</button>
+              <button id="runner-separate-button" class="status-action-button far-action" type="button" title="Runner died far from the buyer and needs a separate Resurrection.">Far from buyer</button>
+            </div>
+            <div class="status-connection-row">
+              <button id="runner-disconnected-button" class="status-action-button dc-action" type="button" title="Record a runner disconnect; enter the IGN in Recent events before exporting.">DC</button>
+              <button id="runner-clear-button" class="status-action-button clear-action" type="button" title="Clear the active runner death without using Resurrection." hidden>Clear</button>
+            </div>
+          </div>
+        </article>
+      </section>
+
+      <section id="pending-deaths" class="pending-section" aria-label="Pending deaths">
+        <div class="section-heading pending-heading"><div><h2>Pending deaths</h2><p>Exact Res targets and nearby revive groups</p></div></div>
+        <div id="pending-death-list" class="pending-death-list"><p class="pending-empty">No one is awaiting a revive.</p></div>
+      </section>
+
+      <section class="resources-section" aria-label="Party skill cooldowns" title="Resurrection and Time Leap availability for the current run.">
+        <div class="resource-columns">
+          <div class="resource-group">
+            <div class="group-title"><span title="Used Resurrection remains unavailable until Time Leap resets it."><span class="step-badge" aria-hidden="true">5</span><img class="skill-icon" src="/assets/resurrection.png" alt="" aria-hidden="true" />RES</span></div>
+            <div id="res-cards" class="resource-list"></div>
+          </div>
+          <div class="resource-group">
+            <div class="group-title"><span title="Time Leap alternates on a 36-minute service cadence."><span class="step-badge" aria-hidden="true">6</span><img class="skill-icon" src="/assets/time-leap.png" alt="" aria-hidden="true" />TIME LEAP</span></div>
+            <div id="tl-cards" class="resource-list"></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="body-parts-section" class="body-parts-section">
+        <div class="section-heading body-parts-heading">
+          <h2 title="Tap each body part when it dies. Recorded deaths remain visible for the run."><span class="step-badge" aria-hidden="true">8</span>Horntail body status</h2>
+          <button id="body-parts-toggle" class="body-parts-toggle" type="button" aria-expanded="true" aria-controls="body-part-buttons" title="Hide Horntail body status">Hide</button>
+        </div>
+        <div id="body-part-buttons" class="body-part-grid"></div>
+      </section>
+
+      <section class="history-section">
+        <div class="section-heading history-heading">
+          <h2 title="Actions are listed newest first. Runner IGNs are used only when exporting.">Recent events</h2>
+          <div class="history-actions">
+            <button id="undo-button" class="history-button undo-button step-badged" data-step-badge="11" type="button" title="Undo the latest recorded action without resetting timer deadlines (Ctrl+Z)." aria-keyshortcuts="Control+Z Meta+Z" disabled>↶ Undo</button>
+            <button id="export-button" class="history-button step-badged" data-step-badge="9" type="button" title="Download all recorded events as a text file." disabled>Export</button>
+          </div>
+        </div>
+        <ol id="history-list" class="history-list"><li class="empty-history">Events will appear here.</li></ol>
+      </section>
+    </main>
+
+    <footer class="app-footer shell">
+      <div class="footer-inner">
+        <div class="footer-copy">
+          <div class="footer-tools">
+            <span>Other MapleLegends tools by Sparrow:</span>
+            <a href="https://orbis-pq-helper.vercel.app/" target="_blank" rel="noreferrer"><img src="https://legends.ml/static/images/lib/character/01082232.png" alt="" />OPQ Helper</a>
+            <a href="https://pf-navigator.vercel.app/" target="_blank" rel="noreferrer"><img src="https://legends.ml/static/images/lib/item/03992040.png" alt="" />Phantom Forest Navigator</a>
+          </div>
+          <div class="footer-credit">Made with love for <a href="https://legends.ml/" target="_blank" rel="noreferrer">MapleLegends</a>, but not affiliated. For feedback, please DM thsscapi on <a href="https://forum.legends.ml/index.php?conversations/add&amp;to=thsscapi" target="_blank" rel="noreferrer">ML forums</a>.</div>
+        </div>
+        <a class="donate-button" href="https://ko-fi.com/thsscapi" target="_blank" rel="noreferrer"><img src="https://legends.ml/static/images/lib/item/02030008.png" alt="Coffee Milk" />If you found this tool useful, consider giving me a tip</a>
+      </div>
+    </footer>
+
+    <dialog id="settings-dialog" class="modal">
+      <form id="settings-form" method="dialog">
+        <div class="modal-heading"><div><p class="eyebrow">Before the run</p><h2>Party setup</h2></div><button class="icon-button close-dialog" type="button" aria-label="Close"></button></div>
+        <label>Buyer name<input name="buyerName" autocomplete="off" required /></label>
+        <div class="setup-section">
+          <div class="setup-section-heading"><h3>Main Res</h3><span>Kept in their assigned parties where possible</span></div>
+          <div class="provider-setup-grid main-res-setup">
+            <div class="provider-setup-row"><label>Name<input name="resAName" autocomplete="off" required /></label><label>Res level<input class="res-level-input" name="resALevel" type="number" min="1" max="10" required /></label><label>Party<select name="resAParty"></select></label><label class="check-label"><input name="resASed" type="checkbox" />Sed Bishop</label></div>
+            <div class="provider-setup-row"><label>Name<input name="resBName" autocomplete="off" required /></label><label>Res level<input class="res-level-input" name="resBLevel" type="number" min="1" max="10" required /></label><label>Party<select name="resBParty"></select></label><label class="check-label"><input name="resBSed" type="checkbox" />Sed Bishop</label></div>
+          </div>
+        </div>
+        <div class="setup-section">
+          <div class="setup-section-heading"><h3>Main Time Leap</h3><span>Any ready TL is an equal choice</span></div>
+          <div class="provider-setup-grid main-tl-setup">
+            <div class="provider-setup-row"><label>Name<input name="tlAName" autocomplete="off" required /></label><label>Level<input class="tl-level-input" name="tlALevel" type="number" min="1" max="30" required /></label><label>Party<select name="tlAParty"></select></label></div>
+            <div class="provider-setup-row"><label>Name<input name="tlBName" autocomplete="off" required /></label><label>Level<input class="tl-level-input" name="tlBLevel" type="number" min="1" max="30" required /></label><label>Party<select name="tlBParty"></select></label></div>
+          </div>
+        </div>
+        <div class="setup-section extras-setup">
+          <div class="setup-section-heading"><div><h3>Extra skills</h3><span>Extra Res is backup-only; extra TL is freely interchangeable</span></div><div class="add-provider-actions"><button id="add-extra-res" class="secondary-button" type="button">+ Extra Res</button><button id="add-extra-tl" class="secondary-button" type="button">+ Extra TL</button></div></div>
+          <div id="extra-res-settings" class="extra-provider-list" aria-label="Extra Resurrection users"></div>
+          <div id="extra-tl-settings" class="extra-provider-list" aria-label="Extra Time Leap users"></div>
+        </div>
+        <div id="level-warning" class="form-note"></div>
+        <div class="modal-actions"><button class="secondary-button close-dialog" type="button">Cancel</button><button class="primary-button" value="save">Save setup</button></div>
+      </form>
+    </dialog>
+
+    <dialog id="override-dialog" class="modal override-modal">
+      <form method="dialog">
+        <div class="modal-heading"><div><p class="eyebrow">Keep current timers</p><h2>Correct run state</h2></div><button class="icon-button close-dialog" type="button" aria-label="Close"></button></div>
+        <p class="modal-copy">Use this when a real action was missed or the setup was wrong. Each correction is logged and can still be undone.</p>
+        <div class="override-section"><h3>Unrecorded Resurrection</h3><label>Who cast it?<select id="override-res-caster"></select></label><div id="override-res-targets" class="override-actions"></div></div>
+        <div class="override-section"><h3>Unrecorded Time Leap</h3><div id="override-tl-actions" class="override-actions"></div></div>
+        <div class="override-section"><h3>Revival only</h3><p class="modal-copy">Mark a person or group revived without consuming Res.</p><div id="override-revive-actions" class="override-actions"></div></div>
+        <div class="modal-actions"><button class="secondary-button close-dialog" type="button">Close</button></div>
+      </form>
+    </dialog>
+
+    <script type="module" src="/src/app.js"></script>
+  </body>
+</html>

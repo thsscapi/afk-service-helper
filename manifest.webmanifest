@@ -1,0 +1,9 @@
+{
+  "name": "Sparrow's AFK Service Helper",
+  "short_name": "AFK Helper",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#07110f",
+  "theme_color": "#0e8f6e",
+  "description": "Live Resurrection and Time Leap cycle guidance for AFK boss services."
+}
