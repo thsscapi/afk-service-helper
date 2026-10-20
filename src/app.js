@@ -40,7 +40,10 @@ import {
   withUndo,
 } from "./engine.js";
 
+import { DEFAULT_MAPPING, spreadsheetId, validateMapping, mappingRange } from "./sheet-import.js";
+
 const STORAGE_KEY = "afk-service-helper-state-v1";
+const SHEET_CONNECTION_KEY = "afk-service-helper-sheet-connection-v1";
 const BODY_PARTS_COLLAPSED_KEY = "afk-service-helper-body-parts-collapsed";
 const $ = (selector) => document.querySelector(selector);
 
@@ -643,6 +646,84 @@ function updateLevelWarning() {
     : "The planner checks the full combination of Res, TL levels, deaths, disconnects, and natural cooldowns.";
 }
 
+let sheetConnection = null;
+try {
+  const saved = JSON.parse(localStorage.getItem(SHEET_CONNECTION_KEY));
+  if (saved) { spreadsheetId(saved.spreadsheet); mappingRange(validateMapping(saved.mapping)); sheetConnection = saved; }
+} catch { /* A missing or invalid connection is configured again in this browser. */ }
+
+const mappingLabels = {
+  buyerNames: "Buyer name cells (in buyer order)", buyerJobs: "Buyer job cells (same order; optional)",
+  resNames: "Main Bishop name cells (Party 1, Party 2)", sedNotes: "Sed note cells (same order; optional)",
+  tlNames: "TL name column", tlMain1: "Main Party 1 — TL job range", tlMain2: "Main Party 2 — TL job range",
+  tlMules: "Buyer / Mule Party — TL job range", resLevel: "Default Res level", tlLevel: "Default TL level",
+};
+
+function renderSheetMapping(mapping = DEFAULT_MAPPING) {
+  $("#sheet-mapping-fields").replaceChildren(...Object.entries(mappingLabels).map(([key, text]) => {
+    const label = document.createElement("label");
+    label.textContent = text;
+    const input = document.createElement("input");
+    input.dataset.sheetMapping = key;
+    input.value = mapping[key] ?? DEFAULT_MAPPING[key];
+    if (key.endsWith("Level")) { input.type = "number"; input.min = "1"; input.max = key === "resLevel" ? "10" : "30"; }
+    else input.autocomplete = "off";
+    label.append(input);
+    return label;
+  }));
+}
+
+function renderSheetConnection() {
+  const connected = Boolean(sheetConnection);
+  $("#sheet-connection-summary").hidden = !connected;
+  $("#sheet-connection-setup").hidden = connected;
+  $("#sheet-import-button").disabled = !connected;
+  $("#sheet-connection-url").value = sheetConnection?.spreadsheet || "";
+  renderSheetMapping(sheetConnection?.mapping || DEFAULT_MAPPING);
+  $("#sheet-connection-label").textContent = connected ? `Connected: ${sheetConnection.spreadsheet}` : "";
+  const names = String(sheetConnection?.mapping?.buyerNames || DEFAULT_MAPPING.buyerNames).split(",");
+  const selectedBuyer = sheetConnection?.buyer || "1";
+  $("#sheet-import-buyer").replaceChildren(...names.map((cell, index) => {
+    const option = document.createElement("option");
+    option.value = String(index + 1); option.textContent = `Buyer ${index + 1} — ${cell.trim()}`;
+    option.selected = option.value === selectedBuyer;
+    return option;
+  }));
+  $("#sheet-import-mode").value = sheetConnection?.mode || "auto";
+  $("#sheet-import-date").value = sheetConnection?.date || "";
+  $("#sheet-import-gid").value = sheetConnection?.gid || "";
+  $("#sheet-date-label").hidden = $("#sheet-import-mode").value !== "date";
+  $("#sheet-gid-label").hidden = $("#sheet-import-mode").value !== "gid";
+}
+
+$("#sheet-layout-preset").addEventListener("click", () => renderSheetMapping());
+$("#sheet-change-connection").addEventListener("click", () => {
+  $("#sheet-connection-setup").hidden = false;
+  $("#sheet-connection-summary").hidden = true;
+  $("#sheet-import-button").disabled = true;
+});
+$("#sheet-forget-connection").addEventListener("click", () => {
+  localStorage.removeItem(SHEET_CONNECTION_KEY);
+  sheetConnection = null;
+  renderSheetConnection();
+  $("#sheet-import-status").textContent = "Connection forgotten on this browser. Party setup is unchanged.";
+});
+$("#sheet-save-connection").addEventListener("click", () => {
+  try {
+    const id = spreadsheetId($("#sheet-connection-url").value);
+    const mapping = Object.fromEntries([...$("#sheet-mapping-fields").querySelectorAll("input")].map(input => [input.dataset.sheetMapping, input.value.trim()]));
+    mappingRange(validateMapping(mapping));
+    const next = { spreadsheet: `https://docs.google.com/spreadsheets/d/${id}/edit`, mapping, mode: "auto", buyer: "1" };
+    localStorage.setItem(SHEET_CONNECTION_KEY, JSON.stringify(next));
+    sheetConnection = next;
+    renderSheetConnection();
+    $("#sheet-import-status").textContent = "Connection saved on this browser. Choose a buyer, then Fill from sheet.";
+  } catch (error) {
+    $("#sheet-import-status").textContent = `Could not save connection: ${error.message}`;
+  }
+});
+renderSheetConnection();
+
 $("#sheet-import-mode").addEventListener("change", (event) => {
   $("#sheet-date-label").hidden = event.target.value !== "date";
   $("#sheet-gid-label").hidden = event.target.value !== "gid";
@@ -651,6 +732,7 @@ $("#sheet-import-mode").addEventListener("change", (event) => {
 $("#sheet-import-button").addEventListener("click", async () => {
   const button = $("#sheet-import-button");
   const status = $("#sheet-import-status");
+  if (!sheetConnection) { status.textContent = "Connect your own Google Sheet first."; return; }
   const mode = $("#sheet-import-mode").value;
   const params = new URLSearchParams({ buyer: $("#sheet-import-buyer").value });
   if (mode !== "auto") {
@@ -661,7 +743,15 @@ $("#sheet-import-button").addEventListener("click", async () => {
   button.disabled = true;
   status.textContent = "Reading sheet…";
   try {
-    const response = await fetch(`/api/sheet-import?${params}`, { cache: "no-store" });
+    const preferences = { ...sheetConnection, mode, buyer: params.get("buyer"), date: $("#sheet-import-date").value, gid: $("#sheet-import-gid").value.trim() };
+    localStorage.setItem(SHEET_CONNECTION_KEY, JSON.stringify(preferences));
+    sheetConnection = preferences;
+    const today = new Date();
+    const localDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+    const response = await fetch("/api/sheet-import", {
+      method: "POST", headers: { "Content-Type": "application/json" }, cache: "no-store",
+      body: JSON.stringify({ spreadsheet: sheetConnection.spreadsheet, mapping: sheetConnection.mapping, today: localDate, ...Object.fromEntries(params) }),
+    });
     const result = await response.json();
     if (!response.ok) throw new Error(result.error || "Import failed.");
     const settings = result.settings;

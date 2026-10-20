@@ -20,8 +20,17 @@ createServer(async (request, response) => {
   try {
     const url = new URL(request.url, `http://${request.headers.host}`);
     if (url.pathname === "/api/sheet-import") {
+      if (request.method !== "POST") {
+        response.writeHead(405, { "Content-Type": "application/json", "Cache-Control": "no-store" }).end(JSON.stringify({ error: "Connect your own spreadsheet in Party Setup before importing." }));
+        return;
+      }
       try {
-        const result = await importSheet(Object.fromEntries(url.searchParams));
+        let body = "";
+        for await (const chunk of request) {
+          body += chunk;
+          if (body.length > 12000) throw new Error("Connection settings are too large.");
+        }
+        const result = await importSheet(JSON.parse(body));
         response.writeHead(200, { "Content-Type": "application/json", "Cache-Control": "no-store" }).end(JSON.stringify(result));
       } catch (error) {
         response.writeHead(400, { "Content-Type": "application/json", "Cache-Control": "no-store" }).end(JSON.stringify({ error: error.message }));

@@ -505,6 +505,10 @@ legend { margin-bottom: 10px; font-size: 0.8rem; font-weight: 800; }
 .sheet-import-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-bottom: 10px; }
 .sheet-import-fields [hidden] { display: none; }
 .sheet-import .form-note { overflow-wrap: anywhere; margin-bottom: 0; }
+.sheet-connection-summary, #sheet-connection-summary { margin-bottom: 12px; }
+.sheet-mapping { margin: 12px 0; padding: 10px; border: 1px solid var(--line); border-radius: 8px; }
+.sheet-mapping > button { margin-bottom: 12px; }
+#sheet-connection-setup > .form-note, .sheet-mapping .form-note { margin: 10px 0; line-height: 1.5; }
 @media (max-width: 480px) { .sheet-import-fields { grid-template-columns: 1fr; } }
 /* Sparrow orange branding; retain semantic readiness, warning and revive-group colours. */
 :root{--accent:#fc8500;--accent-soft:#f1a34c;--accent-dark:#c96a00;--bg:#0b0f14;--muted:#a5a8af;--text:#f3f4f6}

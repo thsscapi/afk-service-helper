@@ -149,11 +149,29 @@
         <div class="modal-heading"><div><p class="eyebrow">Before the run</p><h2>Party setup</h2></div><button class="icon-button close-dialog" type="button" aria-label="Close"></button></div>
         <details class="sheet-import setup-section">
           <summary>Import from Google Sheets</summary>
+          <div id="sheet-connection-summary" hidden>
+            <p id="sheet-connection-label" class="form-note"></p>
+            <button id="sheet-change-connection" class="secondary-button" type="button">Change connection</button>
+            <button id="sheet-forget-connection" class="secondary-button" type="button">Forget connection</button>
+          </div>
+          <div id="sheet-connection-setup">
+            <p class="form-note">Connect your own sheet once on this browser. The sheet must allow <strong>Anyone with the link → Viewer</strong>; private sheets are not supported. Import reads the sheet without changing it.</p>
+            <label>Google Sheets link<input id="sheet-connection-url" type="url" placeholder="https://docs.google.com/spreadsheets/d/…/edit" autocomplete="off" /></label>
+            <details class="sheet-mapping">
+              <summary>Cell mappings and default levels</summary>
+              <p class="form-note">Sparrow’s layout is prefilled. Change these to match your sheet. Use comma-separated cells for buyers and the two main Bishops. Buyer job cells are optional; “Bish” or “Bishop” adds the selected buyer as backup Res. Sed notes match the word “Sed”; the first Bishop is used if neither matches.</p>
+              <button id="sheet-layout-preset" class="secondary-button" type="button">Use Sparrow’s sheet layout</button>
+              <div id="sheet-mapping-fields" class="sheet-import-fields"></div>
+              <p class="form-note">TL job ranges match “Buccaneer”. Names come from the name column on the same row. Groups are read in the order above: the first two TL users fill Main TL and the rest become Extra TL, keeping their party assignments. Leave unused TL ranges empty. Supported cells: A1–AZ500, spanning at most 15,000 cells.</p>
+            </details>
+            <button id="sheet-save-connection" class="secondary-button" type="button">Save connection</button>
+            <p class="form-note">Connection settings are saved only in this browser. On import, the app sends the sheet link and mappings to its server to read Google’s public export. No Google sign-in or credentials are stored. Import replaces the form’s roster, including extra providers; review before Save setup.</p>
+          </div>
           <div class="sheet-import-fields">
             <label>Sheet<select id="sheet-import-mode"><option value="auto">Auto — today / latest run</option><option value="date">By date</option><option value="gid">By GID</option></select></label>
             <label id="sheet-date-label" hidden>Date<input id="sheet-import-date" type="date" /></label>
             <label id="sheet-gid-label" hidden>GID or sheet URL<input id="sheet-import-gid" placeholder="1457690336" /></label>
-            <label>Buyer<select id="sheet-import-buyer"><option value="1">Buyer 1 — H46</option><option value="2">Buyer 2 — H47</option></select></label>
+            <label>Buyer<select id="sheet-import-buyer"></select></label>
           </div>
           <button id="sheet-import-button" class="secondary-button" type="button">Fill from sheet</button>
           <p id="sheet-import-status" class="form-note" role="status">Fills this form for review. Click Save setup to apply.</p>

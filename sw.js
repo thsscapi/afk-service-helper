@@ -1,5 +1,5 @@
-const CACHE = "afk-service-helper-v41";
-const ASSETS = ["/", "/index.html", "/styles.css", "/assets/horntail.png", "/assets/resurrection.png", "/assets/time-leap.png", "/src/app.js", "/src/engine.js", "/manifest.webmanifest"];
+const CACHE = "afk-service-helper-v42";
+const ASSETS = ["/", "/index.html", "/styles.css", "/assets/horntail.png", "/assets/resurrection.png", "/assets/time-leap.png", "/src/app.js", "/src/engine.js", "/src/sheet-import.js", "/manifest.webmanifest"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(ASSETS)));

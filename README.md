@@ -14,11 +14,13 @@ Open <http://127.0.0.1:4173>.
 
 ## Google Sheets import
 
-Party Setup → Fill from sheet imports the configured Autumn Horntail spreadsheet for review before Save setup. Auto selects today's dated tab in Asia/Singapore, otherwise the newest dated tab (or the leftmost tab if no dates exist). Date and GID overrides are available. Duplicate dates require a GID to distinguish runs. Buyer 1 reads H46/K46; Buyer 2 reads H47/K47.
+Party Setup → Import from Google Sheets → Save connection stores each user's own spreadsheet URL and cell mappings in their browser. There is no shared default spreadsheet. The optional Sparrow layout preset provides mappings only: buyer names H46/H47, buyer jobs K46/K47, main Bishop names H10/H20, Sed notes N10/N20, and TL job groups K5:K10, K15:L20, K26:K31 with names in H. Up to eight buyers can be configured using comma-separated cells; unused TL job ranges can be left empty.
 
-The import reads names, Sed Bishop, and party assignments. It replaces the form's extra-provider list; Res levels default to 10 and TL levels to 30 for review. A Bishop buyer becomes a backup Res with Buyer character checked. Import does not change the sheet or apply setup until saved. Live setup saves preserve existing timers; reset between separate runs as usual.
+Auto selects today's dated tab using the browser's local date, otherwise the newest dated tab (or the leftmost tab if no dates exist). Date and GID overrides are available. Duplicate dates require a GID to distinguish runs. Change connection edits the mappings; Forget connection removes them from that browser without changing the party roster.
 
-The read-only `/api/sheet-import` endpoint uses Google's public HTML tab list and CSV export, so the workbook must remain accessible to link viewers. No Google credentials are stored. The endpoint is supported both by the local server and a Vercel Node function. Google export format changes may require updating the importer.
+The import reads names, Sed Bishop, and party assignments. It replaces the form's extra-provider list; skill levels use configurable defaults (initially Res 10 and TL 30). A Bishop buyer becomes a backup Res with Buyer character checked. Import does not change the sheet or apply setup until saved. Live setup saves preserve existing timers; reset between separate runs as usual.
+
+The read-only `/api/sheet-import` endpoint accepts POST JSON containing `spreadsheet`, `mapping`, `buyer`, and optional `date` or `gid`. It rejects GET requests and missing spreadsheet settings. The server only fetches Google Sheets URLs with validated IDs; custom destinations are not accepted. Mappings are bounded to A1:AZ500 and 15,000 cells. Google Sheets must allow anyone with the link to view; private Google sign-in is not supported. No Google credentials or connections are stored by the application server. On import, the browser sends the configured link and mappings to the app server to read Google's public HTML tab list and CSV export; results use no-store. The endpoint works in both the local server and Vercel. Google export format changes may require updating the importer.
 
 ## Verify
 
