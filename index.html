@@ -159,6 +159,17 @@
     <dialog id="settings-dialog" class="modal">
       <form id="settings-form" method="dialog">
         <div class="modal-heading"><div><p class="eyebrow">Before the run</p><h2>Party setup</h2></div><button class="icon-button close-dialog" type="button" aria-label="Close"></button></div>
+        <details class="sheet-import setup-section">
+          <summary>Import from Google Sheets</summary>
+          <div class="sheet-import-fields">
+            <label>Sheet<select id="sheet-import-mode"><option value="auto">Auto — today / latest run</option><option value="date">By date</option><option value="gid">By GID</option></select></label>
+            <label id="sheet-date-label" hidden>Date<input id="sheet-import-date" type="date" /></label>
+            <label id="sheet-gid-label" hidden>GID or sheet URL<input id="sheet-import-gid" placeholder="1457690336" /></label>
+            <label>Buyer<select id="sheet-import-buyer"><option value="1">Buyer 1 — H46</option><option value="2">Buyer 2 — H47</option></select></label>
+          </div>
+          <button id="sheet-import-button" class="secondary-button" type="button">Fill from sheet</button>
+          <p id="sheet-import-status" class="form-note" role="status">Fills this form for review. Click Save setup to apply.</p>
+        </details>
         <label>Buyer name<input name="buyerName" autocomplete="off" required /></label>
         <div class="setup-section">
           <div class="setup-section-heading"><h3>Main Res</h3><span>Kept in their assigned parties where possible</span></div>

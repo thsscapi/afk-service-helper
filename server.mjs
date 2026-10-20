@@ -1,8 +1,11 @@
 import { createServer } from "node:http";
 import { readFile } from "node:fs/promises";
 import { extname, resolve, sep } from "node:path";
+import { fileURLToPath } from "node:url";
+import { importSheet } from "./api/sheet-import.js";
 
-const root = resolve(process.cwd());
+const root = fileURLToPath(new URL(".", import.meta.url));
+const rootPath = resolve(root);
 const port = Number(process.env.AFK_HELPER_PORT || 4173);
 const contentTypes = {
   ".css": "text/css; charset=utf-8",
@@ -10,15 +13,25 @@ const contentTypes = {
   ".js": "text/javascript; charset=utf-8",
   ".json": "application/json; charset=utf-8",
   ".webmanifest": "application/manifest+json; charset=utf-8",
+  ".png": "image/png",
 };
 
 createServer(async (request, response) => {
   try {
     const url = new URL(request.url, `http://${request.headers.host}`);
+    if (url.pathname === "/api/sheet-import") {
+      try {
+        const result = await importSheet(Object.fromEntries(url.searchParams));
+        response.writeHead(200, { "Content-Type": "application/json", "Cache-Control": "no-store" }).end(JSON.stringify(result));
+      } catch (error) {
+        response.writeHead(400, { "Content-Type": "application/json", "Cache-Control": "no-store" }).end(JSON.stringify({ error: error.message }));
+      }
+      return;
+    }
     const pathname = decodeURIComponent(url.pathname === "/" ? "/index.html" : url.pathname);
-    const file = resolve(root, `.${pathname}`);
+    const file = resolve(rootPath, `.${pathname}`);
 
-    if (file !== root && !file.startsWith(`${root}${sep}`)) {
+    if (file !== rootPath && !file.startsWith(`${rootPath}${sep}`)) {
       response.writeHead(403).end("Forbidden");
       return;
     }

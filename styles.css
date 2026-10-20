@@ -171,7 +171,7 @@ button:disabled { cursor: not-allowed; opacity: 0.42; }
 .next-steps li { counter-increment: step; padding: 4px 7px; border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 7px; background: rgba(4, 15, 12, 0.25); color: #d8e6e1; font-size: 0.65rem; }
 .next-steps li::before { content: counter(step); display: inline-grid; width: 16px; height: 16px; margin-right: 6px; place-items: center; border-radius: 50%; background: rgba(255, 255, 255, 0.1); font-size: 0.6rem; font-weight: 800; }
 
-.status-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.status-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; position: sticky; top: 8px; z-index: 5; align-self: start; padding: 3px; margin: -3px; border-radius: 14px; background: var(--bg); box-shadow: 0 8px 18px rgba(0, 0, 0, 0.3); }
 .status-card, .pending-section, .resources-section, .body-parts-section, .history-section {
   border: 1px solid var(--line);
   border-radius: 14px;
@@ -498,3 +498,11 @@ legend { margin-bottom: 10px; font-size: 0.8rem; font-weight: 800; }
   *, *::before, *::after { scroll-behavior: auto !important; transition: none !important; }
   .instruction-target-flash { animation: none !important; }
 }
+
+.sheet-import { margin-bottom: 20px; }
+.sheet-import summary { cursor: pointer; font-weight: 700; }
+.sheet-import[open] summary { margin-bottom: 10px; }
+.sheet-import-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-bottom: 10px; }
+.sheet-import-fields [hidden] { display: none; }
+.sheet-import .form-note { overflow-wrap: anywhere; margin-bottom: 0; }
+@media (max-width: 480px) { .sheet-import-fields { grid-template-columns: 1fr; } }

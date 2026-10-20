@@ -12,6 +12,14 @@ npm start
 
 Open <http://127.0.0.1:4173>.
 
+## Google Sheets import
+
+Party Setup → Fill from sheet imports the configured Autumn Horntail spreadsheet for review before Save setup. Auto selects today's dated tab in Asia/Singapore, otherwise the newest dated tab (or the leftmost tab if no dates exist). Date and GID overrides are available. Duplicate dates require a GID to distinguish runs. Buyer 1 reads H46/K46; Buyer 2 reads H47/K47.
+
+The import reads names, Sed Bishop, and party assignments. It replaces the form's extra-provider list; Res levels default to 10 and TL levels to 30 for review. A Bishop buyer becomes a backup Res with Buyer character checked. Import does not change the sheet or apply setup until saved. Live setup saves preserve existing timers; reset between separate runs as usual.
+
+The read-only `/api/sheet-import` endpoint uses Google's public HTML tab list and CSV export, so the workbook must remain accessible to link viewers. No Google credentials are stored. The endpoint is supported both by the local server and a Vercel Node function. Google export format changes may require updating the importer.
+
 ## Verify
 
 ```powershell

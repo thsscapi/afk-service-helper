@@ -643,6 +643,55 @@ function updateLevelWarning() {
     : "The planner checks the full combination of Res, TL levels, deaths, disconnects, and natural cooldowns.";
 }
 
+$("#sheet-import-mode").addEventListener("change", (event) => {
+  $("#sheet-date-label").hidden = event.target.value !== "date";
+  $("#sheet-gid-label").hidden = event.target.value !== "gid";
+});
+
+$("#sheet-import-button").addEventListener("click", async () => {
+  const button = $("#sheet-import-button");
+  const status = $("#sheet-import-status");
+  const mode = $("#sheet-import-mode").value;
+  const params = new URLSearchParams({ buyer: $("#sheet-import-buyer").value });
+  if (mode !== "auto") {
+    const value = $(mode === "date" ? "#sheet-import-date" : "#sheet-import-gid").value.trim();
+    if (!value) { status.textContent = `Enter a ${mode === "date" ? "date" : "GID"} first.`; return; }
+    params.set(mode, value);
+  }
+  button.disabled = true;
+  status.textContent = "Reading sheet…";
+  try {
+    const response = await fetch(`/api/sheet-import?${params}`, { cache: "no-store" });
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.error || "Import failed.");
+    const settings = result.settings;
+    const form = elements.settingsForm.elements;
+    form.buyerName.value = settings.buyerName;
+    settings.resUsers.filter((entry) => entry.main).forEach((entry, index) => {
+      const prefix = index ? "resB" : "resA";
+      form[`${prefix}Name`].value = entry.name;
+      form[`${prefix}Level`].value = entry.level;
+      form[`${prefix}Party`].value = entry.party;
+      form[`${prefix}Sed`].checked = entry.sed;
+    });
+    for (let index = 0; index < 2; index++) {
+      const entry = settings.tlUsers[index];
+      const prefix = index ? "tlB" : "tlA";
+      form[`${prefix}Name`].value = entry?.name || "";
+      form[`${prefix}Level`].value = entry?.level || 30;
+      form[`${prefix}Party`].value = entry?.party || (index ? "main2" : "main1");
+    }
+    elements.extraResSettings.replaceChildren(...settings.resUsers.filter((entry) => !entry.main).map((entry) => extraProviderRow("res", entry)));
+    elements.extraTlSettings.replaceChildren(...settings.tlUsers.filter((entry) => !entry.main).map((entry) => extraProviderRow("tl", entry)));
+    updateLevelWarning();
+    status.textContent = `Loaded ${result.sheet.name} (GID ${result.sheet.gid}) · Buyer ${params.get("buyer")}: ${settings.buyerName}. ${result.warnings.join(" ")} Review and Save setup.${settings.tlUsers.length < 2 ? " Fewer than two TL users found; fill the remaining slot manually." : ""}`;
+  } catch (error) {
+    status.textContent = `Could not import: ${error.message}`;
+  } finally {
+    button.disabled = false;
+  }
+});
+
 function setPartySelect(select, selected = "mules") {
   select.replaceChildren(...PARTY_OPTIONS.map((party) => {
     const option = document.createElement("option");
