@@ -190,3 +190,6 @@ test("runner names are editable live and prefill the still-editable event-log fi
   assert.match(app, /class="history-runner-ign"/);
   assert.match(styles, /\.pending-name-input:focus/);
 });
+test("party setup form stays inside its native dialog", () => {
+  assert.match(html, /<dialog id="settings-dialog"[^>]*>\s*<form id="settings-form" method="dialog">[\s\S]*?<\/form>\s*<\/dialog>/);
+});

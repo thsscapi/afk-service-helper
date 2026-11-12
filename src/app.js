@@ -66,7 +66,7 @@ function htSnapshot() {
   const run = state.run;
   const deaths = getPendingDeaths(state);
   const rows = [{
-    kind: "Buyer Death", name: "", status: run.buyerOnline === false ? "Offline" : !run.active ? "No active run" : "Alive",
+    kind: "Buyer Death", name: state.settings.buyerName, status: run.buyerOnline === false ? "Offline" : !run.active ? "No active run" : "Alive",
     endsAt: run.buyerOnline === false ? null : run.buyerDeadlineAt ?? null, durationMs: SAFE_WINDOW,
   }];
   for (const death of deaths) {
