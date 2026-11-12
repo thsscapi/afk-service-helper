@@ -121,6 +121,19 @@ async function syncHt() {
   if (htDirty) htRetry = setTimeout(syncHt, 300);
 }
 
+async function checkInHt() {
+  if (!htLink || htSending || htUnlinking || htDirty) return;
+  htSending = true;
+  try {
+    const response = await sendHt(htLink, { checkIn: true });
+    if ([400, 403, 404, 410].includes(response.status)) htDirty = true;
+  } catch { /* The HT display will mark the link stale if check-ins stop. */ }
+  finally {
+    htSending = false;
+    if (htDirty) htRetry = setTimeout(syncHt, 300);
+  }
+}
+
 htForm.addEventListener("submit", event => {
   event.preventDefault();
   if (htLink) return;
@@ -1094,10 +1107,14 @@ elements.settingsForm.addEventListener("submit", (event) => {
 });
 
 document.addEventListener("visibilitychange", () => {
-  if (!document.hidden) render({ rebuild: false });
+  if (!document.hidden) {
+    render({ rebuild: false });
+    void checkInHt();
+  }
 });
 
 setInterval(() => render({ rebuild: false }), 250);
+setInterval(checkInHt, 60000);
 renderInstructionsState();
 renderBodyPartsVisibility();
 render();
