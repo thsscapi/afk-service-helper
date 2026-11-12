@@ -67,10 +67,10 @@ function htSnapshot() {
   const deaths = getPendingDeaths(state);
   const rows = [{
     kind: "Buyer Death", name: "", status: run.buyerOnline === false ? "Offline" : !run.active ? "No active run" : "Alive",
-    endsAt: run.buyerOnline === false ? null : run.buyerDeadlineAt ?? null,
+    endsAt: run.buyerOnline === false ? null : run.buyerDeadlineAt ?? null, durationMs: SAFE_WINDOW,
   }];
   for (const death of deaths) {
-    if (death.kind !== "buyer") rows.push({ kind: "Runner Death", name: death.name, status: death.groupId === "buyer" ? "Near buyer" : "Far from buyer", endsAt: death.deadlineAt });
+    if (death.kind === "runner") rows.push({ kind: "Runner Death", name: death.name, status: "Dead", endsAt: death.deadlineAt, durationMs: SAFE_WINDOW });
   }
   if (!deaths.some(death => death.kind !== "buyer")) rows.push({ kind: "Runner Death", name: "", status: "No pending deaths", endsAt: null });
   for (const [kind, providers] of [["Resurrection", run.res], ["Time Leap", run.tl]]) {
@@ -78,7 +78,9 @@ function htSnapshot() {
     for (const provider of providers) {
       const status = provider.online === false ? "Offline" : provider.alive === false ? "Dead" :
         provider.readyAt > Date.now() ? "Cooldown" : "Ready";
-      rows.push({ kind, name: provider.name, status, endsAt: status === "Dead" ? provider.deadDeadlineAt : status === "Cooldown" ? provider.readyAt : null });
+      rows.push({ kind, name: provider.name, status, endsAt: status === "Dead" ? provider.deadDeadlineAt : status === "Cooldown" ? provider.readyAt : null,
+        durationMs: status === "Dead" ? SAFE_WINDOW : kind === "Resurrection" ? resCooldown(provider.level) : tlCooldown(provider.level),
+        extra: !provider.main });
     }
   }
   return { rows, parts: BODY_PARTS.filter(part => run.bodyParts?.[part]) };
