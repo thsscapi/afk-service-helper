@@ -550,3 +550,7 @@ h1 span,.eyebrow,.history-button,.provider-kind{color:var(--accent)}
 @media(max-width:700px){.sparrowFooterInner{display:block}.sparrowFooterLeft{min-width:0}.sparrowDonate{margin-top:16px}.sparrowOtherApps a{white-space:normal}}
 
 .sparrowFooter.shell{width:min(1360px,calc(100% - 16px));margin:28px auto 16px}
+.afk-ht-link{margin:1rem auto;padding:1rem;width:min(100% - 2rem, 56rem)}
+.afk-ht-link summary{cursor:pointer;font-weight:700}
+.afk-ht-link form:not([hidden]){display:flex;flex-wrap:wrap;align-items:end;gap:.6rem}
+.afk-ht-link label{display:grid;gap:.25rem}

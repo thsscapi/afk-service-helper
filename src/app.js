@@ -46,6 +46,107 @@ const STORAGE_KEY = "afk-service-helper-state-v1";
 const SHEET_CONNECTION_KEY = "afk-service-helper-sheet-connection-v1";
 const BODY_PARTS_COLLAPSED_KEY = "afk-service-helper-body-parts-collapsed";
 const $ = (selector) => document.querySelector(selector);
+const HT_LINK = "afk-ht-link-v1";
+let htLink = null;
+try {
+  const saved = JSON.parse(localStorage.getItem(HT_LINK));
+  if (/^[A-Z0-9]{4}$/.test(saved?.room) && /^[a-f0-9-]{36}$/.test(saved?.key)) htLink = saved;
+} catch { /* Local storage can be unavailable. */ }
+let htSending = false, htDirty = false, htRetry, htUnlinking = false;
+const htStatus = $("#ht-link-status");
+const htForm = $("#ht-link-form");
+const htUnlink = $("#ht-unlink");
+
+function showHtLink() {
+  htForm.hidden = Boolean(htLink);
+  htUnlink.hidden = !htLink;
+}
+
+function htSnapshot() {
+  const run = state.run;
+  const deaths = getPendingDeaths(state);
+  const rows = [{
+    kind: "Buyer Death", name: "", status: run.buyerOnline === false ? "Offline" : !run.active ? "No active run" : "Alive",
+    endsAt: run.buyerOnline === false ? null : run.buyerDeadlineAt ?? null,
+  }];
+  for (const death of deaths) {
+    if (death.kind !== "buyer") rows.push({ kind: "Runner Death", name: death.name, status: death.groupId === "buyer" ? "Near buyer" : "Far from buyer", endsAt: death.deadlineAt });
+  }
+  if (!deaths.some(death => death.kind !== "buyer")) rows.push({ kind: "Runner Death", name: "", status: "No pending deaths", endsAt: null });
+  for (const [kind, providers] of [["Resurrection", run.res], ["Time Leap", run.tl]]) {
+    if (!providers.length) rows.push({ kind, name: "", status: "No providers", endsAt: null });
+    for (const provider of providers) {
+      const status = provider.online === false ? "Offline" : provider.alive === false ? "Dead" :
+        provider.readyAt > Date.now() ? "Cooldown" : "Ready";
+      rows.push({ kind, name: provider.name, status, endsAt: status === "Dead" ? provider.deadDeadlineAt : status === "Cooldown" ? provider.readyAt : null });
+    }
+  }
+  return { rows, parts: BODY_PARTS.filter(part => run.bodyParts?.[part]) };
+}
+
+async function sendHt(link, payload) {
+  return fetch("https://httimer.sparrowtools.net/api/afk?room=" + encodeURIComponent(link.room), {
+    method: "POST", headers: { Authorization: "Bearer " + link.key, "Content-Type": "application/json" },
+    body: JSON.stringify(payload), signal: AbortSignal.timeout(10000),
+  });
+}
+
+async function syncHt() {
+  htDirty = true;
+  if (!htLink || htSending || htUnlinking) return;
+  clearTimeout(htRetry);
+  htSending = true;
+  htDirty = false;
+  try {
+    const response = await sendHt(htLink, htSnapshot());
+    if ([403, 404, 410].includes(response.status)) {
+      const room = htLink.room;
+      htLink = null;
+      try { localStorage.removeItem(HT_LINK); } catch {}
+      showHtLink();
+      htStatus.textContent = "Could not link to " + room + ". Check the key or create a new room.";
+      return;
+    }
+    if (!response.ok) throw new Error("Sync failed");
+    htStatus.textContent = "Linked to " + htLink.room;
+  } catch {
+    htStatus.textContent = "HT Timer not synced. Retrying…";
+    htRetry = setTimeout(syncHt, 4000);
+    return;
+  } finally {
+    htSending = false;
+  }
+  if (htDirty) htRetry = setTimeout(syncHt, 300);
+}
+
+htForm.addEventListener("submit", event => {
+  event.preventDefault();
+  if (htLink) return;
+  htLink = { room: $("#ht-room").value.trim().toUpperCase(), key: $("#ht-key").value.trim() };
+  try { localStorage.setItem(HT_LINK, JSON.stringify(htLink)); } catch {}
+  $("#ht-key").value = "";
+  showHtLink();
+  htStatus.textContent = "Linking…";
+  void syncHt();
+});
+htUnlink.addEventListener("click", async () => {
+  if (!htLink || htSending || htUnlinking) return;
+  htUnlinking = true;
+  clearTimeout(htRetry);
+  try {
+    const response = await sendHt(htLink, { unlink: true });
+    if (!response.ok && ![403, 404, 410].includes(response.status)) throw new Error("Unlink failed");
+    htLink = null;
+    try { localStorage.removeItem(HT_LINK); } catch {}
+    showHtLink();
+    htStatus.textContent = "Unlinked.";
+  } catch {
+    htStatus.textContent = "Could not unlink. Try again.";
+  } finally {
+    htUnlinking = false;
+    if (htLink && htDirty) void syncHt();
+  }
+});
 
 const firstVisit = localStorage.getItem(STORAGE_KEY) === null;
 let bodyPartsCollapsed = localStorage.getItem(BODY_PARTS_COLLAPSED_KEY) === "true";
@@ -134,6 +235,7 @@ function commit(next) {
 }
 
 function persistState() {
+  void syncHt();
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
     elements.saveIndicator.textContent = "Saved";
@@ -503,12 +605,14 @@ function renderBodyParts() {
     button.className = `body-part-button ${down ? "down" : ""}`;
     button.dataset.bodyPart = part.toLowerCase().replaceAll(" ", "-");
     button.type = "button";
-    button.disabled = down;
     button.innerHTML = `<span></span><small></small>`;
     button.querySelector("span").textContent = part;
     button.querySelector("small").textContent = down ? "Dead" : "Alive";
-    button.title = down ? `${part} has been recorded dead.` : `Mark ${part} dead.`;
-    button.addEventListener("click", () => commit(recordBodyPartDeath(state, part, Date.now())));
+    button.title = down ? `Mark ${part} alive again.` : `Mark ${part} dead.`;
+    button.setAttribute("aria-pressed", String(down));
+    button.addEventListener("click", () => commit(down
+      ? { ...state, run: { ...state.run, bodyParts: { ...state.run.bodyParts, [part]: false } } }
+      : recordBodyPartDeath(state, part, Date.now())));
     return button;
   }));
 }
@@ -995,6 +1099,8 @@ setInterval(() => render({ rebuild: false }), 250);
 renderInstructionsState();
 renderBodyPartsVisibility();
 render();
+showHtLink();
+if (htLink) void syncHt();
 
 if (firstVisit) queueMicrotask(openSettings);
 

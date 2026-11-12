@@ -105,9 +105,8 @@ test("branding, instructions, larger timers, body accordion, and shared footer a
   assert.match(html, /id="body-parts-toggle"[^>]*aria-expanded="true"[^>]*aria-controls="body-part-buttons"/);
   assert.match(app, /BODY_PARTS_COLLAPSED_KEY/);
   assert.match(app, /bodyPartsToggle\.setAttribute\("aria-expanded"/);
-  assert.match(html, /https:\/\/orbis-pq-helper\.vercel\.app\//);
-  assert.match(html, /https:\/\/pf-navigator\.vercel\.app\//);
-  assert.match(html, /https:\/\/ko-fi\.com\/thsscapi/);
+  assert.match(html, /https:\/\/sparrowtools\.net\//);
+  assert.doesNotMatch(html, /https:\/\/ko-fi\.com\//);
   assert.match(html, /Made with love for/);
 });
 
