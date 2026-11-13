@@ -1,4 +1,4 @@
-const CACHE = "afk-service-helper-v49";
+const CACHE = "afk-service-helper-v50";
 const ASSETS = ["/", "/index.html", "/styles.css", "/assets/horntail.png", "/assets/resurrection.png", "/assets/time-leap.png", "/src/app.js", "/src/engine.js", "/src/sheet-import.js", "/manifest.webmanifest"];
 
 self.addEventListener("install", (event) => {
