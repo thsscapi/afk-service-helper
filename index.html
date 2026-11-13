@@ -35,6 +35,16 @@
           <button id="settings-button" class="icon-button setup-button step-badged" data-step-badge="1" type="button" aria-label="Open party setup" title="Open party setup"><span aria-hidden="true">⚙</span><span>Party Setup</span></button>
         </div>
       </div>
+      <div class="afk-ht-link">
+        <strong>HT Timer</strong>
+        <p id="ht-link-guide">To share these timers, choose <strong>Open &amp; link AFK Helper</strong> in your HT Timer room.</p>
+        <p id="ht-link-status" role="status"></p>
+        <a id="ht-open-room" target="_blank" rel="noopener" hidden>Open HT Timer room</a>
+        <details id="ht-link-menu" hidden>
+          <summary aria-label="HT Timer link options">⋯</summary>
+          <button id="ht-unlink" type="button">Unlink room</button>
+        </details>
+      </div>
       <p class="app-description">A fan-made tool for managing AFK buyer services across boss runs. Track Resurrection, Time Leap, runner incidents, and revive deadlines while Next Action guides the cycle.</p>
       <details class="app-instructions">
         <summary><span class="instructions-summary-icon" aria-hidden="true">ⓘ</span><span>See instructions</span></summary>
@@ -151,12 +161,7 @@
     </main>
 
     <footer class="sparrowFooter shell"><div class="sparrowFooterInner"><div class="sparrowFooterLeft"><a href="https://sparrowtools.net/" class="sparrowDonate"><img src="https://sparrowtools.net/sparrow.svg" width="20" height="20" alt="" style="vertical-align:middle;margin-right:5px" />Browse Sparrow Tools</a><div class="sparrowFooterCredits">Made with love for <a href="https://legends.ml/" target="_blank" rel="noopener noreferrer">MapleLegends</a>, but not affiliated. For feedback, please DM thsscapi on <a href="https://forum.legends.ml/index.php?conversations/add&amp;to=thsscapi" target="_blank" rel="noopener noreferrer">ML forums</a>.</div></div>
-      <div class="afk-ht-link">
-      <p id="ht-link-guide">Want to link to HT Timer? Choose <strong>Open &amp; link AFK Helper</strong> in your HT Timer room.</p>
-      <button id="ht-unlink" type="button" hidden>Unlink room</button>
-      <a id="ht-open-room" target="_blank" rel="noopener" hidden>Open HT Timer room</a>
-      <p id="ht-link-status" role="status"></p>
-      </div></div></footer>
+      </div></footer>
     <dialog id="settings-dialog" class="modal">
       <form id="settings-form" method="dialog">
         <div class="modal-heading"><div><p class="eyebrow">Before the run</p><h2>Party setup</h2></div><button class="icon-button close-dialog" type="button" aria-label="Close"></button></div>

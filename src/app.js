@@ -63,7 +63,9 @@ function showHtLink() {
   roomLink.hidden = !htLink;
   if (htLink) roomLink.href = "https://httimer.sparrowtools.net/?room=" + htLink.room;
   htGuide.hidden = Boolean(htLink);
-  htUnlink.hidden = !htLink;
+  const menu = $("#ht-link-menu");
+  menu.hidden = !htLink;
+  if (!htLink) menu.open = false;
 }
 
 async function redeemHtInvite() {
@@ -185,6 +187,7 @@ window.addEventListener("message", event => {
 htUnlink.addEventListener("click", async () => {
   if (!htLink || htSending || htUnlinking) return;
   htUnlinking = true;
+  $("#ht-link-menu").open = false;
   clearTimeout(htRetry);
   try {
     const response = await sendHt(htLink, { unlink: true });
