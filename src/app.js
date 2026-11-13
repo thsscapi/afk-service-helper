@@ -59,8 +59,35 @@ const htUnlink = $("#ht-unlink");
 let linkReply;
 
 function showHtLink() {
+  const roomLink = $("#ht-open-room");
+  roomLink.hidden = !htLink;
+  if (htLink) roomLink.href = "https://httimer.sparrowtools.net/?room=" + htLink.room;
   htGuide.hidden = Boolean(htLink);
   htUnlink.hidden = !htLink;
+}
+
+async function redeemHtInvite() {
+  const params = new URLSearchParams(location.hash.slice(1));
+  if (!params.has("invite")) return;
+  const room = params.get("room"), token = params.get("invite");
+  history.replaceState(null, "", location.pathname + location.search);
+  if (!/^[A-Z0-9]{4}$/.test(room) || !/^[a-f0-9-]{36}$/.test(token)) {
+    htStatus.textContent = "Invalid AFK controller invite.";
+    return;
+  }
+  if (htLink && htLink.room !== room && !confirm("Switch this Helper to HT room " + room + "?")) return;
+  htStatus.textContent = "Connecting to HT Timer…";
+  try {
+    const response = await fetch("https://httimer.sparrowtools.net/api/afk/redeem?room=" + room, {
+      method: "POST", headers: { Authorization: "Bearer " + token }, signal: AbortSignal.timeout(10000),
+    });
+    const data = await response.json();
+    if (!response.ok || !data.key) throw new Error(data.error || "Could not redeem invite.");
+    htLink = { room, key: data.key };
+    try { localStorage.setItem(HT_LINK, JSON.stringify(htLink)); } catch {}
+    showHtLink();
+    void syncHt();
+  } catch (error) { htStatus.textContent = error.message || "Could not connect to HT Timer."; }
 }
 
 function htSnapshot() {
@@ -1130,7 +1157,8 @@ renderInstructionsState();
 renderBodyPartsVisibility();
 render();
 showHtLink();
-if (htLink) void syncHt();
+if (new URLSearchParams(location.hash.slice(1)).has("invite")) void redeemHtInvite();
+else if (htLink) void syncHt();
 
 if (firstVisit) queueMicrotask(openSettings);
 
