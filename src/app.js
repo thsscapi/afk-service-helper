@@ -54,11 +54,12 @@ try {
 } catch { /* Local storage can be unavailable. */ }
 let htSending = false, htDirty = false, htRetry, htUnlinking = false;
 const htStatus = $("#ht-link-status");
-const htForm = $("#ht-link-form");
+const htGuide = $("#ht-link-guide");
 const htUnlink = $("#ht-unlink");
+let linkReply;
 
 function showHtLink() {
-  htForm.hidden = Boolean(htLink);
+  htGuide.hidden = Boolean(htLink);
   htUnlink.hidden = !htLink;
 }
 
@@ -111,6 +112,10 @@ async function syncHt() {
     }
     if (!response.ok) throw new Error("Sync failed");
     htStatus.textContent = "Linked to " + htLink.room;
+    if (linkReply) {
+      linkReply.source.postMessage({ type: "sparrow-afk-linked", nonce: linkReply.nonce }, "https://httimer.sparrowtools.net");
+      linkReply = null;
+    }
   } catch {
     htStatus.textContent = "HT Timer not synced. Retrying…";
     htRetry = setTimeout(syncHt, 4000);
@@ -134,12 +139,18 @@ async function checkInHt() {
   }
 }
 
-htForm.addEventListener("submit", event => {
-  event.preventDefault();
-  if (htLink) return;
-  htLink = { room: $("#ht-room").value.trim().toUpperCase(), key: $("#ht-key").value.trim() };
+window.addEventListener("message", event => {
+  const data = event.data;
+  if (event.origin !== "https://httimer.sparrowtools.net" || event.source !== window.opener ||
+      data?.type !== "sparrow-afk-link" || !/^[A-Z0-9]{4}$/.test(data.room) ||
+      !/^[a-f0-9-]{36}$/.test(data.key) || typeof data.nonce !== "string" || htSending || htUnlinking) return;
+  if (htLink && htLink.room !== data.room && !window.confirm("Switch this Helper to HT room " + data.room + "?")) {
+    event.source.postMessage({ type: "sparrow-afk-linked", nonce: data.nonce, cancelled: true }, event.origin);
+    return;
+  }
+  linkReply = { source: event.source, nonce: data.nonce };
+  htLink = { room: data.room, key: data.key };
   try { localStorage.setItem(HT_LINK, JSON.stringify(htLink)); } catch {}
-  $("#ht-key").value = "";
   showHtLink();
   htStatus.textContent = "Linking…";
   void syncHt();
