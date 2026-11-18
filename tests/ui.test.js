@@ -29,7 +29,7 @@ test("runner disconnect IGN exists only in the event log and timer ticks avoid f
 
 test("the run dashboard uses compact labels, requested icons, and tooltip copy", () => {
   assert.doesNotMatch(html, /Horntail operations|Party resources|Cooldown board|Incident controls|One-tap runner events|Horntail progress|>Body parts</i);
-  assert.match(html, /https:\/\/legends\.ml\/static\/images\/lib\/item\/04031138\.png/);
+  assert.match(html, /\/assets\/item-04031138\.png/);
   assert.match(html, /class="role-icon sword-icon"[^>]*>⚔️</);
   assert.match(html, />Runner died:</);
   assert.match(html, />Near buyer</);
