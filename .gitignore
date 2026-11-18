@@ -2,3 +2,5 @@
 .env*
 output/
 node_modules/
+cloudflare-assets/
+.wrangler/

@@ -1,0 +1,9 @@
+{
+  "name":"sparrow-afkservice",
+  "main":"worker.js",
+  "compatibility_date":"2026-11-18",
+  "assets":{"directory":"./cloudflare-assets","binding":"ASSETS","run_worker_first":["/api/*"]},
+  "routes":[{"pattern":"afkservice.sparrowtools.net","custom_domain":true}],
+  "workers_dev":false,
+  "preview_urls":false
+}
