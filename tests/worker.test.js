@@ -7,8 +7,16 @@ test("rate-limited imports do not reach Google",async()=>{
   const original=globalThis.fetch;
   globalThis.fetch=()=>{throw Error("must not contact Google");};
   try {
-    const response=await worker.fetch(request(),{SAFETY:{getByName:()=>({fetch:async()=>new Response(null,{status:429})})}});
+    let rules;
+    const response=await worker.fetch(request(),{SAFETY:{getByName:()=>({fetch:async(_url,options)=>{
+      rules=JSON.parse(options.body).rules;
+      return new Response(null,{status:429,headers:{"Retry-After":"245"}});
+    }})}});
     assert.equal(response.status,429);
+    assert.equal(rules[0].max,15);
+    assert.equal(rules[1].max,100);
+    assert.equal(response.headers.get("Retry-After"),"245");
+    assert.equal((await response.json()).retryAfter,245);
   } finally { globalThis.fetch=original; }
 });
 test("cached imports do not reach Google and responses are not browser-cached",async()=>{

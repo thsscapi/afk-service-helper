@@ -10,10 +10,12 @@ export class SafetyGate {
       return new Response(null,{status:204});
     }
     const rules=data.rules;
+    let retryAfter=0;
     for(const rule of rules){
-      const row=[...this.sql.exec("SELECT n FROM gates WHERE key=?",rule.key)][0];
-      if((row?.n??0)>=rule.max)return new Response(null,{status:429,headers:{"Retry-After":"60"}});
+      const row=[...this.sql.exec("SELECT n,until FROM gates WHERE key=?",rule.key)][0];
+      if((row?.n??0)>=rule.max)retryAfter=Math.max(retryAfter,Math.ceil((row.until-now)/1000));
     }
+    if(retryAfter)return new Response(null,{status:429,headers:{"Retry-After":String(retryAfter)}});
     for(const rule of rules)this.sql.exec("INSERT INTO gates VALUES(?,1,?) ON CONFLICT(key) DO UPDATE SET n=n+1",rule.key,now+rule.ms);
     return new Response(null,{status:204});
   }

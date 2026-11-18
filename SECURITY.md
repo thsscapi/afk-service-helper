@@ -1,6 +1,8 @@
 # Sheets importer controls
 
-The Worker limits imports to 5 requests per source and 100 globally per 10 minutes.
+The Worker limits imports to 15 requests per source and 100 globally per 10 minutes.
+Blocked responses include the actual remaining wait in Retry-After and JSON;
+the import panel displays a countdown without changing the user's setup.
 Limits persist across restarts. Cached requests still count toward these limits.
 Identical import payloads are cached internally for 60 seconds at the Cloudflare
 location handling them; browser responses stay no-store. Cache misses at another

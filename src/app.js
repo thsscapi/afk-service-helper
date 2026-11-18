@@ -891,9 +891,26 @@ $("#sheet-import-mode").addEventListener("change", (event) => {
   $("#sheet-gid-label").hidden = event.target.value !== "gid";
 });
 
+let sheetRetryUntil = 0;
+let sheetRetryTimer;
+function showSheetRetry(seconds) {
+  sheetRetryUntil = Date.now() + seconds * 1000;
+  clearInterval(sheetRetryTimer);
+  const tick = () => {
+    const remaining = Math.max(0, Math.ceil((sheetRetryUntil - Date.now()) / 1000));
+    $("#sheet-import-button").disabled = remaining > 0 || !sheetConnection;
+    $("#sheet-import-status").textContent = remaining
+      ? `Import limit reached. Try again in ${Math.floor(remaining / 60)}:${String(remaining % 60).padStart(2, "0")}. Your setup is unchanged; you can still fill it manually.`
+      : "You can try importing again now. Your setup is unchanged.";
+    if (!remaining) clearInterval(sheetRetryTimer);
+  };
+  tick();
+  sheetRetryTimer = setInterval(tick, 1000);
+}
 $("#sheet-import-button").addEventListener("click", async () => {
   const button = $("#sheet-import-button");
   const status = $("#sheet-import-status");
+  if (Date.now() < sheetRetryUntil) return;
   if (!sheetConnection) { status.textContent = "Connect your own Google Sheet first."; return; }
   const mode = $("#sheet-import-mode").value;
   const params = new URLSearchParams({ buyer: $("#sheet-import-buyer").value });
@@ -915,6 +932,10 @@ $("#sheet-import-button").addEventListener("click", async () => {
       body: JSON.stringify({ spreadsheet: sheetConnection.spreadsheet, mapping: sheetConnection.mapping, today: localDate, ...Object.fromEntries(params) }),
     });
     const result = await response.json();
+    if (response.status === 429) {
+      showSheetRetry(Number(result.retryAfter) || Number(response.headers.get("Retry-After")) || 60);
+      return;
+    }
     if (!response.ok) throw new Error(result.error || "Import failed.");
     const settings = result.settings;
     const form = elements.settingsForm.elements;
@@ -940,7 +961,7 @@ $("#sheet-import-button").addEventListener("click", async () => {
   } catch (error) {
     status.textContent = `Could not import: ${error.message}`;
   } finally {
-    button.disabled = false;
+    button.disabled = Date.now() < sheetRetryUntil;
   }
 });
 

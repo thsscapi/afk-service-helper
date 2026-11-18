@@ -8,8 +8,11 @@ export default {
     const respond = (body, status) => Response.json(body,{status,headers:{"Cache-Control":"no-store"}});
     if (request.method !== "POST") return respond({error:"Use POST to import a sheet."},405);
     if (request.headers.get("Origin") !== url.origin) return respond({error:"Origin not allowed."},403);
-    const allowed=await limit(request,env,"sheet",5,100,600000);
-    if(!allowed.ok)return respond({error:"Too many imports. Please wait before trying again."},429);
+    const allowed=await limit(request,env,"sheet",15,100,600000);
+    if(!allowed.ok){
+      const retryAfter=Number(allowed.headers.get("Retry-After"))||60;
+      return Response.json({error:"Import limit reached. Your setup is unchanged. Please try again when the countdown ends.",retryAfter},{status:429,headers:{"Cache-Control":"no-store","Retry-After":String(retryAfter)}});
+    }
     const reader=request.body?.getReader();
     if (!reader) return respond({error:"Missing connection settings."},400);
     let text="", size=0; const decoder=new TextDecoder();
