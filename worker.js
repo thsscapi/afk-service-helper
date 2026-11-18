@@ -1,8 +1,11 @@
 import { importSheet } from "./api/sheet-import.js";
+import { secureResponse } from "./security-headers.js";
 import { SafetyGate, digest, limit } from "./safety.js";
 export { SafetyGate };
 export default {
-  async fetch(request, env) {
+  async fetch(request, env) { return secureResponse(await handle(request, env)); }
+};
+async function handle(request, env) {
     const url = new URL(request.url);
     if (url.pathname !== "/api/sheet-import") return env.ASSETS.fetch(request);
     const respond = (body, status) => Response.json(body,{status,headers:{"Cache-Control":"no-store"}});
@@ -28,5 +31,4 @@ export default {
       return respond(result,200);
     }
     catch(error){return respond({error:error.message||"Import failed."},400);}
-  }
-};
+}
