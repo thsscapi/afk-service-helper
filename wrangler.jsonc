@@ -5,5 +5,7 @@
   "assets":{"directory":"./cloudflare-assets","binding":"ASSETS","run_worker_first":["/api/*"]},
   "routes":[{"pattern":"afkservice.sparrowtools.net","custom_domain":true}],
   "workers_dev":false,
+  "durable_objects":{"bindings":[{"name":"SAFETY","class_name":"SafetyGate"}]},
+  "migrations":[{"tag":"safety-v1","new_sqlite_classes":["SafetyGate"]}],
   "preview_urls":false
 }

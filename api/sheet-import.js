@@ -3,7 +3,16 @@ import { spreadsheetId, selectSheet, parseRoster, parseCsv, validateMapping, map
 async function googleText(id, path) {
   const response = await fetch(`https://docs.google.com/spreadsheets/d/${id}/${path}`, { signal: AbortSignal.timeout(15000) });
   if (!response.ok) throw new Error("Google Sheets could not be read. Check that link viewing is still enabled.");
-  return response.text();
+  const reader=response.body.getReader(),decoder=new TextDecoder();
+  let size=0,text="";
+  for(;;){
+    const {done,value}=await reader.read();
+    if(done)break;
+    size+=value.byteLength;
+    if(size>2000000){await reader.cancel();throw new Error("Google returned a sheet that is too large.");}
+    text+=decoder.decode(value,{stream:true});
+  }
+  return text+decoder.decode();
 }
 
 export async function importSheet(options = {}) {
