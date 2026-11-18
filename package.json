@@ -7,5 +7,8 @@
     "start": "node server.mjs",
     "test": "node --test",
     "check": "node --check src/engine.js && node --check src/app.js && node --test"
+  },
+  "dependencies": {
+    "@vercel/analytics": "^2.0.1"
   }
 }

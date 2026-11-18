@@ -1,3 +1,5 @@
+import { inject } from '@vercel/analytics';
+
 import {
   BODY_PARTS,
   MINUTE,
@@ -41,6 +43,9 @@ import {
 } from "./engine.js";
 
 import { DEFAULT_MAPPING, spreadsheetId, validateMapping, mappingRange } from "./sheet-import.js";
+
+// Initialize Vercel Web Analytics
+inject();
 
 const STORAGE_KEY = "afk-service-helper-state-v1";
 const SHEET_CONNECTION_KEY = "afk-service-helper-sheet-connection-v1";
