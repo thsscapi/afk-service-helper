@@ -50,6 +50,27 @@ test("an optional blank Buyer name survives saving and reloading", () => {
   assert.equal(createInitialState({}, NOW).settings.buyerName, "Buyer");
 });
 
+test("removing the buyer cancels only its tracking and preserves runner deadlines and cooldowns", () => {
+  let active = recordBuyerDeath(startRun(createInitialState({}, NOW), NOW), NOW);
+  active = recordRunnerDeath(active, { canCombine: true, name: "Runner" }, NOW);
+  active = castTl(active, "tlA", NOW);
+  const runnerDeadline = active.run.runners[0].deadlineAt;
+  const tlReady = active.run.tl[0].readyAt;
+  const changed = updateSettingsPreservingRun(active, { ...active.settings, buyerName: "" }, NOW + MINUTE);
+  assert.equal(changed.run.buyerDeadlineAt, null);
+  assert.equal(changed.run.runners[0].deadlineAt, runnerDeadline);
+  assert.notEqual(changed.run.runners[0].groupId, "buyer");
+  assert.equal(changed.run.tl[0].readyAt, tlReady);
+  assert.equal(getPendingDeaths(changed).some(death => death.kind === "buyer"), false);
+  assert.equal(recordBuyerDeath(changed, NOW + MINUTE), changed);
+  assert.equal(recordBuyerDisconnect(changed, NOW + MINUTE), changed);
+  assert.equal(getServiceOutlook(changed, NOW + MINUTE).text, "Buyer tracking off");
+  assert.match(getRecommendation(changed, NOW + MINUTE).title, /RES RUNNER NOW/);
+  const legacy = JSON.parse(JSON.stringify(changed));
+  legacy.run.buyerDeadlineAt = NOW + SAFE_WINDOW;
+  assert.equal(migrateState(legacy, NOW + MINUTE).run.buyerDeadlineAt, null);
+});
+
 test("explicitly disabled TL tracking survives save and reload without default Buccaneers", () => {
   const initial = createInitialState({ tlUsers: [] }, NOW);
   const restored = migrateState(JSON.parse(JSON.stringify(initial)), NOW + MINUTE);

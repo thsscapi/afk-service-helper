@@ -97,10 +97,10 @@ async function redeemHtInvite() {
 function htSnapshot() {
   const run = state.run;
   const deaths = getPendingDeaths(state);
-  const rows = [{
+  const rows = state.settings.buyerName ? [{
     kind: "Buyer Death", name: state.settings.buyerName, status: run.buyerOnline === false ? "Offline" : !run.active ? "No active run" : "Alive",
     endsAt: run.buyerOnline === false ? null : run.buyerDeadlineAt ?? null, durationMs: SAFE_WINDOW,
-  }];
+  }] : [];
   for (const death of deaths) {
     if (death.kind === "runner") rows.push({ kind: "Runner Death", name: death.name, status: "Dead", endsAt: death.deadlineAt, durationMs: SAFE_WINDOW });
   }
@@ -321,9 +321,9 @@ function render({ rebuild = true } = {}) {
   elements.startButton.classList.toggle("restart-armed", restartArmed);
   elements.runnerClear.hidden = true;
   const buyerDead = Number.isFinite(state.run.buyerDeadlineAt) && state.run.buyerOnline !== false;
-  elements.buyerDiedButton.disabled = !state.run.active || state.run.buyerOnline === false || buyerDead;
-  elements.buyerDisconnectedButton.disabled = !state.run.active || state.run.buyerOnline === false;
-  elements.runnerTogetherButton.disabled = !state.run.active;
+  elements.buyerDiedButton.disabled = !state.settings.buyerName || !state.run.active || state.run.buyerOnline === false || buyerDead;
+  elements.buyerDisconnectedButton.disabled = !state.settings.buyerName || !state.run.active || state.run.buyerOnline === false;
+  elements.runnerTogetherButton.disabled = !state.settings.buyerName || !state.run.active;
   elements.runnerSeparateButton.disabled = !state.run.active;
   elements.runnerDisconnectedButton.disabled = !state.run.active;
   elements.undoButton.disabled = !(state.run.undoStack?.length || state.run.history?.[0]?.snapshot);
@@ -352,8 +352,16 @@ function renderRecommendation() {
 }
 
 function renderPeople() {
-  setText(elements.buyerName, state.settings.buyerName || "Buyer");
-  if (!state.run.active) {
+  const hasBuyer = Boolean(state.settings.buyerName);
+  setText(elements.buyerName, state.settings.buyerName);
+  elements.buyerName.hidden = !hasBuyer;
+  $("#buyer-disabled-message").hidden = hasBuyer;
+  elements.buyerTimer.closest(".timer-block").hidden = !hasBuyer;
+  elements.buyerState.hidden = !hasBuyer;
+  if (!hasBuyer) {
+    setText(elements.buyerTimer, "—");
+    updateDeathTimer("buyer", elements.buyerTimer, null, SAFE_WINDOW);
+  } else if (!state.run.active) {
     setText(elements.buyerTimer, formatDuration(SAFE_WINDOW));
     elements.buyerTimer.classList.remove("muted");
     updateDeathTimer("buyer", elements.buyerTimer, null, SAFE_WINDOW);
@@ -1172,7 +1180,7 @@ elements.settingsForm.addEventListener("submit", (event) => {
     ].filter((entry) => entry.name),
   };
   const setupWarnings = [];
-  if (!settings.buyerName) setupWarnings.push('No Buyer IGN is entered. Buyer timers remain available under the generic "Buyer" label.');
+  if (!settings.buyerName) setupWarnings.push("No Buyer IGN is entered. Buyer tracking will be disabled, and no buyer timer will be shared with HT Timer.");
   if (settings.tlUsers.length === 0) setupWarnings.push("No Time Leap users are configured; TL tracking will be off.");
   else if (settings.tlUsers.length === 1) setupWarnings.push("Only one Time Leap user is configured; only that TL will be tracked.");
   if (setupWarnings.length) {

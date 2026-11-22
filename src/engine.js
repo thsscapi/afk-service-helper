@@ -70,7 +70,26 @@ export function migrateState(state, now = Date.now()) {
   syncLegacyRunner(next);
   next.run.nextRunnerNumber = Math.max(1, Number(next.run.nextRunnerNumber) || next.run.runners.length + 1);
   next.run.undoStack ||= [];
+  clearDisabledBuyer(next);
   return next;
+}
+
+function clearDisabledBuyer(state) {
+  if (state.settings.buyerName) return;
+  state.run.buyerDeadlineAt = null;
+  state.run.buyerOnline = true;
+  for (const type of ["res", "tl"]) {
+    for (const member of state.run[type] || []) {
+      if (member.reviveGroupId === "buyer") member.reviveGroupId = `resource:${type}:${member.id}`;
+    }
+  }
+  for (const runner of state.run.runners || []) {
+    if (runner.groupId === "buyer") {
+      runner.groupId = `solo:runner:${runner.id}`;
+      runner.canCombine = false;
+    }
+  }
+  syncLegacyRunner(state);
 }
 
 function normalizeSettings(settings) {
@@ -168,7 +187,7 @@ export function startRun(state, now = Date.now()) {
 }
 
 export function recordBuyerDeath(state, now = Date.now()) {
-  if (!state.run.active || state.run.buyerOnline === false || Number.isFinite(state.run.buyerDeadlineAt)) return state;
+  if (!state.settings.buyerName || !state.run.active || state.run.buyerOnline === false || Number.isFinite(state.run.buyerDeadlineAt)) return state;
   const next = clone(state);
   next.run.buyerDeadlineAt = now + SAFE_WINDOW;
   [...next.run.res, ...next.run.tl].filter((entry) => entry.ownerBuyer && entry.online !== false).forEach((entry) => {
@@ -181,7 +200,7 @@ export function recordBuyerDeath(state, now = Date.now()) {
 }
 
 export function recordBuyerDisconnect(state, now = Date.now()) {
-  if (!state.run.active || state.run.buyerOnline === false) return state;
+  if (!state.settings.buyerName || !state.run.active || state.run.buyerOnline === false) return state;
   const next = clone(state);
   next.run.buyerOnline = false;
   next.run.buyerDeadlineAt = null;
@@ -196,6 +215,7 @@ export function recordBuyerDisconnect(state, now = Date.now()) {
 }
 
 export function recordRunnerDeath(state, { name = "", canCombine = false } = {}, now = Date.now()) {
+  canCombine = canCombine && Boolean(state.settings.buyerName);
   const next = clone(state);
   next.run.runners ||= [];
   next.run.nextRunnerNumber = Math.max(1, Number(next.run.nextRunnerNumber) || 1);
@@ -321,12 +341,12 @@ export function castRes(state, resId, target, now = Date.now()) {
 
 export function getPendingDeaths(state) {
   const deaths = [];
-  if (state.run.buyerOnline !== false && Number.isFinite(state.run.buyerDeadlineAt)) {
+  if (state.settings.buyerName && state.run.buyerOnline !== false && Number.isFinite(state.run.buyerDeadlineAt)) {
     deaths.push({ targetId: "buyer", name: state.settings.buyerName || "Buyer", kind: "buyer", deadlineAt: state.run.buyerDeadlineAt, groupId: "buyer" });
   }
   for (const type of ["res", "tl"]) {
     for (const member of state.run[type] || []) {
-      if (member.online === false || member.alive !== false || !Number.isFinite(member.deadDeadlineAt) || member.ownerBuyer) continue;
+      if (member.online === false || member.alive !== false || !Number.isFinite(member.deadDeadlineAt) || (member.ownerBuyer && state.settings.buyerName)) continue;
       deaths.push({ targetId: `resource:${type}:${member.id}`, name: member.name, kind: "resource", resourceType: type, resourceId: member.id, deadlineAt: member.deadDeadlineAt, groupId: member.reviveGroupId || `resource:${type}:${member.id}` });
     }
   }
@@ -489,6 +509,7 @@ export function updateSettingsPreservingRun(state, settings, now = Date.now()) {
   next.run.nextResId = next.run.res.some((entry) => entry.id === state.run.nextResId) ? state.run.nextResId : next.run.res[0]?.id || null;
   next.run.nextTlId = next.run.tl.some((entry) => entry.id === state.run.nextTlId) ? state.run.nextTlId : next.run.tl[0]?.id || null;
   next.run.history.unshift(historyEvent(now, "setup", "Party setup updated; active timers and cooldowns preserved"));
+  clearDisabledBuyer(next);
   syncLegacyRunner(next);
   return next;
 }
@@ -666,7 +687,26 @@ function instruction(kind, tone, title, detail, steps = [], meta = {}) {
   return { kind, tone, title, detail, steps, ...meta };
 }
 
+function trackingOnlyRecommendation(state, now) {
+  if (!state.run.active) return instruction("start", "idle", "START THE RUN", "Buyer tracking is off. Start the run to track runner incidents and skills.");
+  const group = getReviveGroups(state)[0];
+  if (!group) return instruction("tracking-only", "idle", "TRACKING RUN", "No buyer entered. Record runner deaths, disconnects, and skill use as needed.");
+  const name = group.names.join(" + ");
+  const remaining = group.deadlineAt - now;
+  if (remaining <= 0) return instruction("runner-expired", "danger", `${name.toUpperCase()} WINDOW MISSED`, "Clear or correct the recorded death.");
+  const res = preferredRes(state, now, "runner");
+  if (res) return instruction("res-runner", "action", `RES ${name.toUpperCase()} NOW`, `Use ${res.name} before ${formatDuration(remaining)}.`, [`Res ${name} with ${res.name}`], { actorId: res.id, targetIds: group.targets, target: "runner" });
+  const readyTl = availableTl(state, now);
+  if (readyTl.length) return tlNowInstruction(readyTl, `Reset Res, then revive ${name}.`);
+  const resAt = state.run.res.filter(isUsable).reduce((minimum, entry) => Math.min(minimum, entry.readyAt), Infinity);
+  const tl = nextTl(state);
+  const nextAt = Math.min(resAt, tl?.readyAt ?? Infinity);
+  if (nextAt <= group.deadlineAt) return instruction("wait-resources", "wait", `WAIT ${formatDuration(nextAt - now)} FOR ${resAt <= (tl?.readyAt ?? Infinity) ? "RES" : "TL"}`, `Then revive ${name} before the death window expires.`);
+  return instruction("runner-unavailable", "danger", "NO RUNNER REVIVE IN TIME", `No Res or TL will be ready before ${name}'s death window expires.`);
+}
+
 export function getRecommendation(state, now = Date.now()) {
+  if (!state.settings.buyerName) return trackingOnlyRecommendation(state, now);
   if (!state.run.active) {
     return instruction("start", "idle", "START THE RUN", "Click Start Run when the service begins. Record Buyer died separately when it happens.");
   }
@@ -970,6 +1010,7 @@ function separateRecommendation(state, now, buyerRemaining, runnerRemaining, rea
 }
 
 export function getServiceOutlook(state, now = Date.now()) {
+  if (!state.settings.buyerName) return { sustainable: true, horizonMs: null, text: "Buyer tracking off" };
   if (!state.run.active) return { sustainable: true, horizonMs: null, text: "Not started" };
   if (state.run.buyerOnline === false) return { sustainable: false, horizonMs: 0, text: "Buyer DC" };
   const cycle = getCycleSustainability(state, now);
