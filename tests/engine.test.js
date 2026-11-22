@@ -11,6 +11,7 @@ import {
   castResTargets,
   castTl,
   createInitialState,
+  migrateState,
   crossedDeathTimerAlert,
   disconnectMember,
   formatDuration,
@@ -39,6 +40,31 @@ import {
 } from "../src/engine.js";
 
 const NOW = 1_800_000_000_000;
+
+test("explicitly disabled TL tracking survives save and reload without default Buccaneers", () => {
+  const initial = createInitialState({ tlUsers: [] }, NOW);
+  const restored = migrateState(JSON.parse(JSON.stringify(initial)), NOW + MINUTE);
+  assert.deepEqual(restored.settings.tlUsers, []);
+  assert.deepEqual(restored.run.tl, []);
+  assert.equal(restored.run.nextTlId, null);
+  const active = recordBuyerDeath(startRun(restored, NOW + MINUTE), NOW + MINUTE);
+  assert.doesNotThrow(() => getRecommendation(active, NOW + MINUTE));
+  const changed = updateSettingsPreservingRun(active, { ...active.settings, tlUsers: [] }, NOW + 2 * MINUTE);
+  assert.equal(changed.run.buyerDeadlineAt, active.run.buyerDeadlineAt);
+  assert.deepEqual(changed.run.tl, []);
+  assert.equal(createInitialState({}, NOW).run.tl.length, 2);
+});
+
+test("a single TL retains its slot and cooldown when the other TL is removed", () => {
+  const initial = startRun(createInitialState({}, NOW), NOW);
+  const used = castTl(initial, "tlB", NOW);
+  const settings = { ...used.settings, tlUsers: used.settings.tlUsers.filter(entry => entry.id === "tlB") };
+  const changed = updateSettingsPreservingRun(used, settings, NOW + MINUTE);
+  const restored = migrateState(JSON.parse(JSON.stringify(changed)), NOW + 2 * MINUTE);
+  assert.equal(restored.run.tl.length, 1);
+  assert.equal(restored.run.tl[0].id, "tlB");
+  assert.equal(restored.run.tl[0].readyAt, used.run.tl.find(entry => entry.id === "tlB").readyAt);
+});
 
 function activeState() {
   const started = startRun(createInitialState({

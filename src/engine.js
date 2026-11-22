@@ -95,7 +95,7 @@ function normalizeSettings(settings) {
     const firstMainRes = resUsers.find((provider) => provider.main);
     if (firstMainRes) firstMainRes.sed = true;
   }
-  const tlUsers = normalizeProviders(settings.tlUsers?.length ? settings.tlUsers : defaultTl, "tl");
+  const tlUsers = normalizeProviders(Array.isArray(settings.tlUsers) ? settings.tlUsers : defaultTl, "tl");
   return {
     buyerName: String(settings.buyerName || "Buyer").trim() || "Buyer",
     resNames: resUsers.filter((entry) => entry.main).slice(0, 2).map((entry) => entry.name),

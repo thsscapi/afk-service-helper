@@ -778,7 +778,7 @@ function setText(element, text) {
 function openSettings() {
   const form = elements.settingsForm.elements;
   const mainRes = state.settings.resUsers.filter((entry) => entry.main);
-  const mainTl = state.settings.tlUsers.filter((entry) => entry.main);
+  const mainTl = ["tlA", "tlB"].map((id) => state.settings.tlUsers.find((entry) => entry.main && entry.id === id));
   form.buyerName.value = state.settings.buyerName;
   form.resAName.value = mainRes[0]?.name || "Bishop A";
   form.resBName.value = mainRes[1]?.name || "Bishop B";
@@ -786,8 +786,8 @@ function openSettings() {
   form.resBLevel.value = mainRes[1]?.level || 10;
   form.resASed.checked = Boolean(mainRes[0]?.sed);
   form.resBSed.checked = Boolean(mainRes[1]?.sed);
-  form.tlAName.value = mainTl[0]?.name || "Bucc A";
-  form.tlBName.value = mainTl[1]?.name || "Bucc B";
+  form.tlAName.value = mainTl[0]?.name || "";
+  form.tlBName.value = mainTl[1]?.name || "";
   form.tlALevel.value = mainTl[0]?.level || 30;
   form.tlBLevel.value = mainTl[1]?.level || 30;
   setPartySelect(form.resAParty, mainRes[0]?.party || "main1");
@@ -801,7 +801,13 @@ function openSettings() {
 }
 
 function updateLevelWarning() {
-  const levels = [...elements.settingsForm.querySelectorAll(".tl-level-input")].map((input) => Number(input.value));
+  const form = elements.settingsForm.elements;
+  for (const prefix of ["tlA", "tlB"]) {
+    const filled = Boolean(form[`${prefix}Name`].value.trim());
+    form[`${prefix}Level`].required = filled;
+    form[`${prefix}Level`].disabled = !filled;
+  }
+  const levels = [...elements.settingsForm.querySelectorAll(".tl-level-input:not(:disabled)")].map((input) => Number(input.value));
   const below = levels.filter((level) => level < 14).length;
   elements.levelWarning.textContent = below
     ? `${below} TL ${below === 1 ? "user is" : "users are"} below Lv14. The planner will use the exact cooldowns and may require more skill providers.`
@@ -957,7 +963,7 @@ $("#sheet-import-button").addEventListener("click", async () => {
     elements.extraResSettings.replaceChildren(...settings.resUsers.filter((entry) => !entry.main).map((entry) => extraProviderRow("res", entry)));
     elements.extraTlSettings.replaceChildren(...settings.tlUsers.filter((entry) => !entry.main).map((entry) => extraProviderRow("tl", entry)));
     updateLevelWarning();
-    status.textContent = `Loaded ${result.sheet.name} (GID ${result.sheet.gid}) · Buyer ${params.get("buyer")}: ${settings.buyerName}. ${result.warnings.join(" ")} Review and Save setup.${settings.tlUsers.length < 2 ? " Fewer than two TL users found; fill the remaining slot manually." : ""}`;
+    status.textContent = `Loaded ${result.sheet.name} (GID ${result.sheet.gid}) · Buyer ${params.get("buyer")}: ${settings.buyerName}. ${result.warnings.join(" ")} Review and Save setup.${settings.tlUsers.length < 2 ? " Fewer than two TL users found; unused slots can be left blank." : ""}`;
   } catch (error) {
     status.textContent = `Could not import: ${error.message}`;
   } finally {
@@ -1163,8 +1169,14 @@ elements.settingsForm.addEventListener("submit", (event) => {
       { id: "tlA", name: form.get("tlAName").trim(), level: Number(form.get("tlALevel")), main: true, party: form.get("tlAParty") },
       { id: "tlB", name: form.get("tlBName").trim(), level: Number(form.get("tlBLevel")), main: true, party: form.get("tlBParty") },
       ...collectExtraProviders(elements.extraTlSettings, "tl"),
-    ],
+    ].filter((entry) => entry.name),
   };
+  if (settings.tlUsers.length < 2) {
+    const message = settings.tlUsers.length === 0
+      ? "Proceed with no TL tracking? You can still use the app for regular service tracking or link it to HT Timer."
+      : "Only one Time Leap user is configured. Proceed without full TL tracking? The entered TL user will still be tracked.";
+    if (!window.confirm(message)) return;
+  }
   const next = state.run.active ? updateSettingsPreservingRun(state, settings, Date.now()) : createInitialState(settings);
   commit(next);
   elements.settingsDialog.close();
