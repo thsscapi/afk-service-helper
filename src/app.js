@@ -352,7 +352,7 @@ function renderRecommendation() {
 }
 
 function renderPeople() {
-  setText(elements.buyerName, state.settings.buyerName);
+  setText(elements.buyerName, state.settings.buyerName || "Buyer");
   if (!state.run.active) {
     setText(elements.buyerTimer, formatDuration(SAFE_WINDOW));
     elements.buyerTimer.classList.remove("muted");
@@ -496,7 +496,7 @@ function renderPendingDeaths() {
         options.push({ id: group.id, label, selected: group.id === death.groupId && group.targets.length > 1 || group.id === "buyer" && death.groupId === "buyer" });
       });
       if (!groups.some((group) => group.id === "buyer") && (Number.isFinite(state.run.buyerDeadlineAt) || death.groupId === "buyer")) {
-        options.push({ id: "buyer", label: `With ${state.settings.buyerName}`, selected: death.groupId === "buyer" });
+        options.push({ id: "buyer", label: `With ${state.settings.buyerName || "Buyer"}`, selected: death.groupId === "buyer" });
       }
       const name = `revive-group-${death.targetId.replaceAll(":", "-")}`;
       field.querySelector(".pending-group-options").replaceChildren(...options.map((option) => {
@@ -1171,11 +1171,12 @@ elements.settingsForm.addEventListener("submit", (event) => {
       ...collectExtraProviders(elements.extraTlSettings, "tl"),
     ].filter((entry) => entry.name),
   };
-  if (settings.tlUsers.length < 2) {
-    const message = settings.tlUsers.length === 0
-      ? "Proceed with no TL tracking? You can still use the app for regular service tracking or link it to HT Timer."
-      : "Only one Time Leap user is configured. Proceed without full TL tracking? The entered TL user will still be tracked.";
-    if (!window.confirm(message)) return;
+  const setupWarnings = [];
+  if (!settings.buyerName) setupWarnings.push('No Buyer IGN is entered. Buyer timers remain available under the generic "Buyer" label.');
+  if (settings.tlUsers.length === 0) setupWarnings.push("No Time Leap users are configured; TL tracking will be off.");
+  else if (settings.tlUsers.length === 1) setupWarnings.push("Only one Time Leap user is configured; only that TL will be tracked.");
+  if (setupWarnings.length) {
+    if (!window.confirm(`${setupWarnings.join("\n\n")}\n\nProceed with this setup? You can still use regular service tracking or link to HT Timer.`)) return;
   }
   const next = state.run.active ? updateSettingsPreservingRun(state, settings, Date.now()) : createInitialState(settings);
   commit(next);

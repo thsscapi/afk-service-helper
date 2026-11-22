@@ -41,6 +41,15 @@ import {
 
 const NOW = 1_800_000_000_000;
 
+test("an optional blank Buyer name survives saving and reloading", () => {
+  const initial = createInitialState({ buyerName: "   ", tlUsers: [] }, NOW);
+  assert.equal(initial.settings.buyerName, "");
+  const restored = migrateState(JSON.parse(JSON.stringify(initial)), NOW + MINUTE);
+  assert.equal(restored.settings.buyerName, "");
+  assert.deepEqual(restored.run.tl, []);
+  assert.equal(createInitialState({}, NOW).settings.buyerName, "Buyer");
+});
+
 test("explicitly disabled TL tracking survives save and reload without default Buccaneers", () => {
   const initial = createInitialState({ tlUsers: [] }, NOW);
   const restored = migrateState(JSON.parse(JSON.stringify(initial)), NOW + MINUTE);

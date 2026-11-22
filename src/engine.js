@@ -97,7 +97,7 @@ function normalizeSettings(settings) {
   }
   const tlUsers = normalizeProviders(Array.isArray(settings.tlUsers) ? settings.tlUsers : defaultTl, "tl");
   return {
-    buyerName: String(settings.buyerName || "Buyer").trim() || "Buyer",
+    buyerName: String(settings.buyerName ?? "Buyer").trim(),
     resNames: resUsers.filter((entry) => entry.main).slice(0, 2).map((entry) => entry.name),
     tlNames: tlUsers.filter((entry) => entry.main).slice(0, 2).map((entry) => entry.name),
     tlLevels: tlUsers.filter((entry) => entry.main).slice(0, 2).map((entry) => entry.level),
@@ -322,7 +322,7 @@ export function castRes(state, resId, target, now = Date.now()) {
 export function getPendingDeaths(state) {
   const deaths = [];
   if (state.run.buyerOnline !== false && Number.isFinite(state.run.buyerDeadlineAt)) {
-    deaths.push({ targetId: "buyer", name: state.settings.buyerName, kind: "buyer", deadlineAt: state.run.buyerDeadlineAt, groupId: "buyer" });
+    deaths.push({ targetId: "buyer", name: state.settings.buyerName || "Buyer", kind: "buyer", deadlineAt: state.run.buyerDeadlineAt, groupId: "buyer" });
   }
   for (const type of ["res", "tl"]) {
     for (const member of state.run[type] || []) {
@@ -991,7 +991,7 @@ export function buildEventLogText(state, exportedAt = Date.now(), formatDate = (
   const history = state.run.history || [];
   return [
     "AFK Service Helper - Event Log",
-    `Buyer: ${state.settings.buyerName}`,
+    `Buyer: ${state.settings.buyerName || "(not entered)"}`,
     `Exported: ${formatDate(exportedAt)}`,
     "",
     ...[...history].reverse().map((event) => {
