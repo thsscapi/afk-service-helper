@@ -1,5 +1,13 @@
 # Cloudflare hosting
 
+## Retired into HT Timer — 28 November 2026
+
+The public Worker redirects to httimer.sparrowtools.net. API routes return 410;
+the old Sheets importer is not publicly reachable. /sw.js unregisters old service
+workers without deleting browser local storage. Old source is retained for rollback.
+Do not re-enable the asset bypass: run_worker_first must remain true.
+Death/Res/TL levels, labels, body status and the event log now live in HT Timer.
+
 Production hosting moved from Vercel to Cloudflare Workers on 18 November 2026.
 Use the custom domain configured in wrangler.jsonc.
 The Vercel project was retired; GitHub pushes no longer deploy automatically.

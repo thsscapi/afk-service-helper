@@ -1,34 +1,16 @@
-import { importSheet } from "./api/sheet-import.js";
 import { secureResponse } from "./security-headers.js";
-import { SafetyGate, digest, limit } from "./safety.js";
-export { SafetyGate };
+export { SafetyGate } from "./safety.js";
+// The standalone Helper is retired. Keep its source and existing browser data;
+// all gameplay now lives in HT Timer and there are no public upstream proxies.
 export default {
-  async fetch(request, env) { return secureResponse(await handle(request, env)); }
-};
-async function handle(request, env) {
+  async fetch(request) {
     const url = new URL(request.url);
-    if (url.pathname !== "/api/sheet-import") return env.ASSETS.fetch(request);
-    const respond = (body, status) => Response.json(body,{status,headers:{"Cache-Control":"no-store"}});
-    if (request.method !== "POST") return respond({error:"Use POST to import a sheet."},405);
-    if (request.headers.get("Origin") !== url.origin) return respond({error:"Origin not allowed."},403);
-    const allowed=await limit(request,env,"sheet",15,100,600000);
-    if(!allowed.ok){
-      const retryAfter=Number(allowed.headers.get("Retry-After"))||60;
-      return Response.json({error:"Import limit reached. Your setup is unchanged. Please try again when the countdown ends.",retryAfter},{status:429,headers:{"Cache-Control":"no-store","Retry-After":String(retryAfter)}});
-    }
-    const reader=request.body?.getReader();
-    if (!reader) return respond({error:"Missing connection settings."},400);
-    let text="", size=0; const decoder=new TextDecoder();
-    for(;;){const {done,value}=await reader.read();if(done)break;size+=value.byteLength;if(size>12000){await reader.cancel();return respond({error:"Connection settings are too large."},413);}text+=decoder.decode(value,{stream:true});}
-    try{
-      const options=JSON.parse(text+decoder.decode());
-      const key=new Request("https://afkservice.sparrowtools.net/__sheet-cache/"+await digest(JSON.stringify(options)));
-      const cache=caches.default;
-      const existing=await cache.match(key);
-      if(existing)return respond(await existing.json(),200);
-      const result=await importSheet(options);
-      await cache.put(key,Response.json(result,{headers:{"Cache-Control":"max-age=60"}}));
-      return respond(result,200);
-    }
-    catch(error){return respond({error:error.message||"Import failed."},400);}
-}
+    if (url.pathname.startsWith("/api/")) return secureResponse(Response.json({error:"AFK Service Helper is now built into HT Timer. Open httimer.sparrowtools.net."},{status:410,headers:{"Cache-Control":"no-store"}}));
+    if (url.pathname === "/sw.js") return secureResponse(new Response('self.addEventListener("install",()=>self.skipWaiting());self.addEventListener("activate",event=>event.waitUntil(self.registration.unregister()));',{headers:{"Content-Type":"application/javascript","Cache-Control":"no-store"}}));
+    // A temporary redirect allows a rollback while the integrated UI beds in.
+    const target = new URL("https://httimer.sparrowtools.net/");
+    const room = url.searchParams.get("room")?.toUpperCase();
+    if (/^[A-Z0-9]{4}$/.test(room ?? "")) target.searchParams.set("room", room);
+    return secureResponse(new Response(null,{status:307,headers:{Location:target.href,"Cache-Control":"no-store"}}));
+  }
+};
